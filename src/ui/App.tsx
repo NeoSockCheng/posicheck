@@ -1,31 +1,41 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import './App.css'
+import { useState } from 'react';
+import Sidebar from './components/Sidebar';
+import DetectionPage from './pages/DetectionPage';
+import HistoryPage from './pages/HistoryPage';
+import FeedbackPage from './pages/FeedbackPage';
+import ProfilePage from './pages/ProfilePage';
+import HomePage from './pages/HomePage';
+import Footer from './components/Footer';
 
-function App() {
-  const [count, setCount] = useState(0)
+export default function App() {
+  const [selectedPage, setSelectedPage] = useState('home');
+
+  const renderPage = () => {
+    switch (selectedPage) {
+      case 'home':
+        return <HomePage onTryDetection={() => setSelectedPage('detection')} />;
+      case 'detection':
+        return <DetectionPage />;
+      case 'history':
+        return <HistoryPage />;
+      case 'feedback':
+        return <FeedbackPage />;
+      case 'profile':
+        return <ProfilePage />;
+      default:
+        return (
+          <div className="flex-1 flex items-center justify-center">Page not found</div>
+        );
+    }
+  };
 
   return (
-    <>
-      <div>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <div className="flex h-screen w-screen font-sans">
+      <Sidebar selected={selectedPage} onSelect={setSelectedPage} />
+      <main className="flex-1 flex flex-col overflow-auto bg-gray-50">
+        <div className="flex-1 flex flex-col">{renderPage()}</div>
+        <Footer />
+      </main>
+    </div>
+  );
 }
-
-export default App
