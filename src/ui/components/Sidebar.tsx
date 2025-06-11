@@ -1,4 +1,6 @@
 import { FaHome, FaSearch, FaHistory, FaComment, FaUser, FaSignOutAlt } from 'react-icons/fa';
+import { logo } from '../assets/assets.ts';
+import NavItemButton from './NavItemButton'; // ✅ Import the new component
 
 const navItemsTop = [
   { id: 'home', icon: FaHome },
@@ -18,34 +20,35 @@ type SidebarProps = {
 };
 
 export default function Sidebar({ selected, onSelect }: SidebarProps) {
-  const renderNavButton = (item: { id: string; icon: React.ElementType }) => {
-    const Icon = item.icon;
-    return (
-      <button
-        key={item.id}
-        onClick={() => onSelect(item.id)}
-        className="flex items-center justify-center w-15 h-10 transition"
-      >
-        <Icon size={20} className={selected === item.id ? 'text-purple-600' : 'text-gray-400'} />
-      </button>
-    );
-  };
-
   return (
-    <aside className="hidden md:flex flex-col w-20 bg-white border-r border-gray-200 shadow items-center py-4 text-purple-600">
-      {/* App Logo or Home */}
+    <aside className="hidden md:flex flex-col w-20 bg-white border-r border-gray-200 shadow items-center py-4 text-indigo-600">
+      {/* App Logo */}
       <div className="mb-6">
-        <FaHome size={24} />
+        <img src={logo} alt="Logo" sizes='24'/>
       </div>
 
       {/* Top Navigation */}
       <nav className="flex flex-col gap-6 flex-1">
-        {navItemsTop.map(renderNavButton)}
+        {navItemsTop.map((item) => (
+          <NavItemButton
+            key={item.id}
+            icon={item.icon}
+            isSelected={selected === item.id}
+            onClick={() => onSelect(item.id)}
+          />
+        ))}
       </nav>
 
       {/* Bottom Navigation */}
       <div className="flex flex-col gap-4 mb-4">
-        {navItemsBottom.map(renderNavButton)}
+        {navItemsBottom.map((item) => (
+          <NavItemButton
+            key={item.id}
+            icon={item.icon}
+            isSelected={selected === item.id}
+            onClick={() => onSelect(item.id)}
+          />
+        ))}
       </div>
     </aside>
   );

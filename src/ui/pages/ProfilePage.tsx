@@ -1,5 +1,8 @@
+import Header from '../components/Header';
+import Avatar from '../components/Avatar';
+import { imageSampleProfile } from '../assets/assets';
+
 export default function ProfilePage() {
-  // Temporary data for demonstration
   const user = {
     name: 'John Doe',
     email: 'john.doe@example.com',
@@ -13,21 +16,19 @@ export default function ProfilePage() {
   return (
     <div className="flex flex-col flex-1 bg-white">
       {/* Header */}
-      <div className="p-4 border-b border-gray-200">
-        <h1 className="text-2xl font-bold text-purple-700">Profile</h1>
-        <p className="text-gray-500 text-sm">Manage your personal information</p>
-      </div>
+      <Header
+        title="Profile"
+        subtitle="View and edit your profile information."
+      />
 
       {/* Content */}
       <div className="flex flex-col sm:flex-row gap-4 p-4 flex-1">
         {/* Profile Picture & Edit (center aligned) */}
         <div className="flex flex-col items-center w-full sm:w-1/4">
-          <div className="w-24 h-24 bg-gray-300 rounded-full flex items-center justify-center text-white text-xl">
-            JD
-          </div>
+          <Avatar imageUrl={imageSampleProfile} size={80} />
           <button
             onClick={handleEdit}
-            className="mt-4 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded text-sm"
+            className="mt-4 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded text-sm"
           >
             Edit Profile
           </button>

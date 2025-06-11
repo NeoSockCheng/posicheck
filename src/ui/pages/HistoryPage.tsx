@@ -1,19 +1,21 @@
 import { useState } from 'react';
-import Footer from '../components/Footer';
 import HistoryCard from '../components/HistoryCard';
+import Header from '../components/Header';
+import { FaRegCalendarAlt } from 'react-icons/fa';
+import { imageSamplePanoramic } from '../assets/assets';
 
 const sampleHistory = [
   {
     id: 1,
     date: 'May 14, 2025 10:34 AM',
     error: 'Chin too high, Tongue not pressed',
-    imageUrl: '/images/sample1.png', // placeholder
+    imageUrl: imageSamplePanoramic,
   },
   {
     id: 2,
     date: 'May 15, 2025 1:00 PM',
     error: 'Head Tilted Left',
-    imageUrl: '/images/sample2.png', // placeholder
+    imageUrl: imageSamplePanoramic, 
   },
 ];
 
@@ -30,28 +32,39 @@ export default function HistoryPage() {
   };
 
   return (
-    <div className="flex flex-col flex-1 bg-white">
-      <div className="p-4 flex flex-col sm:flex-row items-center justify-between">
-        <h1 className="text-xl font-bold text-purple-700 mb-4 sm:mb-0">
-          Detection History
-        </h1>
-        <div className="flex gap-2">
+    <div className="flex flex-col flex-1 bg-gray-50">
+      <Header
+        title="Detection History"
+        subtitle="View the history of your detection attempts."
+      />
+
+
+      <div className="flex gap-2 justify-end p-1">
+        {/* From Date */}
+        <div className="flex items-center gap-1 border border-violet-300 rounded px-2 py-1">
+          <label className="text-xs text-slate-500">From</label>
           <input
             type="date"
             value={fromDate}
             onChange={(e) => setFromDate(e.target.value)}
-            className="border border-purple-300 rounded px-2 py-1 text-sm"
-            placeholder="From Date"
+            className="text-sm text-slate-600 bg-transparent outline-none"
           />
+          <FaRegCalendarAlt className="text-violet-400" size={14} />
+        </div>
+
+        {/* To Date */}
+        <div className="flex items-center gap-1 border border-violet-300 rounded px-2 py-1">
+          <label className="text-xs text-slate-500">To</label>
           <input
             type="date"
             value={toDate}
             onChange={(e) => setToDate(e.target.value)}
-            className="border border-purple-300 rounded px-2 py-1 text-sm"
-            placeholder="To Date"
+            className="text-sm text-slate-600 bg-transparent outline-none"
           />
+          <FaRegCalendarAlt className="text-violet-400" size={14} />
         </div>
       </div>
+
 
       <div className="flex-1 p-4">
         {sampleHistory.map((item) => (
@@ -65,8 +78,6 @@ export default function HistoryPage() {
           />
         ))}
       </div>
-
-      <Footer />
     </div>
   );
 }

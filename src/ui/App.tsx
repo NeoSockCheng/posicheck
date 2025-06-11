@@ -6,6 +6,7 @@ import FeedbackPage from './pages/FeedbackPage';
 import ProfilePage from './pages/ProfilePage';
 import HomePage from './pages/HomePage';
 import Footer from './components/Footer';
+import './index.css';
 
 export default function App() {
   const [selectedPage, setSelectedPage] = useState('home');
@@ -36,6 +37,8 @@ export default function App() {
         <div className="flex-1 flex flex-col">{renderPage()}</div>
         <Footer />
       </main>
+      
     </div>
+    
   );
 }

@@ -1,99 +1,155 @@
 import { useState } from 'react';
-import { FaUpload } from 'react-icons/fa';
+import Button from '../components/Button';
 import InputField from '../components/InputField';
 import ErrorCategory from '../components/ErrorCategory';
+import Header from '../components/Header';
+import UploadBox from '../components/UploadBox';
 
 export default function FeedbackPage() {
   // User info
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [country, setCountry] = useState('');
   const [extraFeedback, setExtraFeedback] = useState('');
 
   // Error selections
-  const [chinError, setChinError] = useState('Absence');
-  const [tongueError, setTongueError] = useState('Absence');
-  const [headTilt, setHeadTilt] = useState('Absence');
-  const [headRotation, setHeadRotation] = useState('Absence');
-  const [bodyPosition, setBodyPosition] = useState('Absence');
+  const [chinError, setChinError] = useState('Chin Normal');
+  const [positionError, setPositionError] = useState('Position Normal');
+  const [headTilt, setHeadTilt] = useState('No Tilt');
+  const [headRotation, setHeadRotation] = useState('No Rotation');
+  const [tongueError, setTongueError] = useState('Tongue Properly Positioned');
+  const [slumpedPosition, setSlumpedPosition] = useState('Upright');
+  const [movementError, setMovementError] = useState('No Movement');
+  const [biteblockError, setBiteblockError] = useState('Biteblock Present');
 
   const handleSubmit = () => {
-    // Submit to backend later
     const feedbackData = {
       phone,
       country,
       extraFeedback,
       chinError,
-      tongueError,
+      positionError,
       headTilt,
       headRotation,
-      bodyPosition,
+      tongueError,
+      slumpedPosition,
+      movementError,
+      biteblockError,
     };
     console.log('Submit feedback:', feedbackData);
   };
 
   return (
-    <div className="flex flex-col p-4 flex-1 bg-purple-50">
-      <h1 className="text-xl sm:text-2xl font-bold mb-4 text-purple-700">User Feedback</h1>
+    <div className="flex flex-col flex-1 bg-gray-50">
+      <Header
+        title="Submit Your Feedback"
+        subtitle="Help us improve our error detection by providing your feedback."
+      />
 
-      <div className="flex flex-col lg:flex-row gap-4 flex-1 bg-purple-100 rounded-lg p-4">
-        {/* Personal Info */}
-        <div className="flex-1">
-          <InputField label="Phone Number" value={phone} onChange={setPhone} />
-          <InputField label="Country" value={country} onChange={setCountry} />
-          <InputField label="Extra Feedback" value={extraFeedback} onChange={setExtraFeedback} textarea />
-        </div>
+      <div className="flex flex-col flex-1 p-4">
+        <div className="flex flex-col lg:flex-row gap-4 flex-1 bg-violet-200 rounded-lg p-4">
+          {/* Personal Info */}
+          <div className="flex-1">
+            <InputField
+              label="Full Name"
+              value={name}
+              onChange={setName}
+            />
 
-        {/* Wrong Detection Report */}
-        <div className="flex-1 flex flex-col gap-4">
-          <div className="flex flex-col items-center border-4 border-dashed border-purple-300 rounded-lg bg-purple-50 p-4">
-            <FaUpload size={30} className="text-purple-600 mb-2" />
-            <p className="text-purple-700 font-semibold text-sm text-center">Upload or Drag and Drop your Panoramic Radiographs</p>
-            <p className="text-xs text-purple-400 mt-1">Max File Size: 20MB | Supported: .jpeg, .pdf</p>
+            <InputField
+              label="Email"
+              value={email}
+              onChange={setEmail}
+            />
+
+            <InputField
+              label="Phone Number"
+              value={phone}
+              onChange={setPhone}
+            />
+            <InputField
+              label="Country"
+              value={country}
+              onChange={setCountry}
+            />
+            <InputField
+              label="Extra Feedback"
+              value={extraFeedback}
+              onChange={setExtraFeedback}
+              textarea
+            />
           </div>
 
-          <ErrorCategory
-            title="Chin Positioning Error"
-            options={['Absence', 'Too High', 'Too Low']}
-            selected={chinError}
-            onSelect={setChinError}
-          />
+          {/* Wrong Detection Report */}
+          <div className="flex-1 flex flex-col gap-4">
+            <UploadBox />
 
-          <ErrorCategory
-            title="Tongue Positioning Error"
-            options={['Absence', 'Presence']}
-            selected={tongueError}
-            onSelect={setTongueError}
-          />
+            <ErrorCategory
+              title="Chin Positioning Error"
+              options={['Chin Normal', 'Chin Too High', 'Chin Too Low']}
+              selected={chinError}
+              onSelect={setChinError}
+            />
 
-          <ErrorCategory
-            title="Head Tilt Error"
-            options={['Absence', 'Tilted Left', 'Tilted Right']}
-            selected={headTilt}
-            onSelect={setHeadTilt}
-          />
+            <ErrorCategory
+              title="Patient Position Error"
+              options={['Position Normal', 'Too Far Forward', 'Too Far Backward']}
+              selected={positionError}
+              onSelect={setPositionError}
+            />
 
-          <ErrorCategory
-            title="Head Rotation Error"
-            options={['Absence', 'Rotated Left', 'Rotated Right']}
-            selected={headRotation}
-            onSelect={setHeadRotation}
-          />
+            <ErrorCategory
+              title="Head Tilt Error"
+              options={['No Tilt', 'Tilted']}
+              selected={headTilt}
+              onSelect={setHeadTilt}
+            />
 
-          <ErrorCategory
-            title="Body Positioning Error"
-            options={['Absence', 'Leaned Forward', 'Leaned Backward']}
-            selected={bodyPosition}
-            onSelect={setBodyPosition}
-          />
+            <ErrorCategory
+              title="Head Rotation Error"
+              options={['No Rotation', 'Rotated']}
+              selected={headRotation}
+              onSelect={setHeadRotation}
+            />
+
+            <ErrorCategory
+              title="Tongue Positioning Error"
+              options={['Tongue Properly Positioned', 'Tongue Not Against Palate']}
+              selected={tongueError}
+              onSelect={setTongueError}
+            />
+
+            <ErrorCategory
+              title="Slumped Positioning Error"
+              options={['Upright', 'Slumped']}
+              selected={slumpedPosition}
+              onSelect={setSlumpedPosition}
+            />
+
+            <ErrorCategory
+              title="Patient Movement Error"
+              options={['No Movement', 'Movement Detected']}
+              selected={movementError}
+              onSelect={setMovementError}
+            />
+
+            <ErrorCategory
+              title="Biteblock Usage"
+              options={['Biteblock Present', 'Biteblock Missing']}
+              selected={biteblockError}
+              onSelect={setBiteblockError}
+            />
+          </div>
         </div>
-      </div>
 
-      <button
-        onClick={handleSubmit}
-        className="mt-4 bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded self-center"
-      >
-        Submit My Feedback
-      </button>
+        <Button
+          onClick={handleSubmit}
+          className="mt-4 self-center"
+        >
+          Submit My Feedback
+        </Button>
+      </div>
     </div>
   );
 }
