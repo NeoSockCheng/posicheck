@@ -29,5 +29,6 @@ electron.contextBridge.exposeInMainWorld('electron', {
   sendFileForInference: (file: { name: string; data: string }) => 
     ipcInvoke('sendFileForInference', file),
   sendFileForFeedback: (file: { name: string; data: string; feedbackData?: any }) => 
-    ipcInvoke('sendFileForFeedback', file)
+    ipcInvoke('sendFileForFeedback', file),
+  exitApp: () => ipcSend('exitApp', {})
 } satisfies Window['electron']);

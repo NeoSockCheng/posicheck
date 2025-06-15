@@ -17,6 +17,7 @@ type EventPayloadMapping = {
             error?: string;
         }
     };
+    exitApp: {};
 }
 
 type UnsubscribeFunction = () => void;
@@ -35,6 +36,7 @@ interface Window {
             id?: string;
             error?: string;
         }>;
+        exitApp: () => void;
     };
 }
 

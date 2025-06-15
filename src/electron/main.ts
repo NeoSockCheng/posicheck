@@ -3,11 +3,13 @@ import { isDev } from './util.js';
 import { getPreloadPath, getUIPath } from './pathResolver.js';
 import { registerInferenceIPC } from './ipc/inference.ipc.js';
 import { registerFeedbackIPC } from './ipc/feedback.ipc.js';
+import { registerAppIPC } from './ipc/app.ipc.js';
 
 // Menu.setApplicationMenu(null);
 
 registerInferenceIPC();
 registerFeedbackIPC();
+registerAppIPC();
 
 app.on('ready', () => {
     const mainWindow = new BrowserWindow({

@@ -20,6 +20,22 @@ type SidebarProps = {
 };
 
 export default function Sidebar({ selected, onSelect }: SidebarProps) {
+  // Handle exit app button click
+  const handleExitClick = () => {
+    if (window.confirm("Are you sure you want to exit the application?")) {
+      window.electron.exitApp();
+    }
+  };
+
+  // Handle nav item clicks
+  const handleNavClick = (id: string) => {
+    if (id === 'logout') {
+      handleExitClick();
+    } else {
+      onSelect(id);
+    }
+  };
+
   return (
     <aside className="hidden md:flex flex-col w-20 bg-white border-r border-gray-200 shadow items-center py-4 text-indigo-600">
       {/* App Logo */}
@@ -34,7 +50,7 @@ export default function Sidebar({ selected, onSelect }: SidebarProps) {
             key={item.id}
             icon={item.icon}
             isSelected={selected === item.id}
-            onClick={() => onSelect(item.id)}
+            onClick={() => handleNavClick(item.id)}
           />
         ))}
       </nav>
@@ -46,7 +62,7 @@ export default function Sidebar({ selected, onSelect }: SidebarProps) {
             key={item.id}
             icon={item.icon}
             isSelected={selected === item.id}
-            onClick={() => onSelect(item.id)}
+            onClick={() => handleNavClick(item.id)}
           />
         ))}
       </div>
