@@ -6,7 +6,7 @@
   "main": "dist-electron/main.js",
   "author": "Neo",
   "license": "MIT",
-  "description": "A simple Electron app with React and TypeScript",
+  "description": "A positioning error detection app build with Electron.",
   "scripts": {
     "dev": "npm-run-all --parallel dev:react dev:electron",
     "dev:react": "vite",

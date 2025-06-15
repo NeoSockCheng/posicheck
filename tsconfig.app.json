@@ -23,6 +23,6 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src", "tailwind.config.js"],
+  "include": ["src", "src/ui/tailwind.config.js"],
   "exclude": ["src/electron"]
 }

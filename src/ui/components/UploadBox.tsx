@@ -1,13 +1,114 @@
-import { FaUpload } from 'react-icons/fa';
+import React, { useRef, useState } from 'react';
 
 export default function UploadBox() {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [fileName, setFileName] = useState<string | null>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setFileName(file.name);
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setPreview(reader.result as string);
+        window.electron.sendFile({
+          name: file.name,
+          data: reader.result as string,
+        });
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setPreview(null);
+      window.electron.sendFile({
+        name: file.name,
+        data: '',
+      });
+    }
+  };
+
+  const handleBoxClick = () => {
+    inputRef.current?.click();
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+    setFileName(file.name);
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setPreview(reader.result as string);
+        window.electron.sendFile({
+          name: file.name,
+          data: reader.result as string,
+        });
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setPreview(null);
+      window.electron.sendFile({
+        name: file.name,
+        data: '',
+      });
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+  };
+
   return (
-    <div className="flex-1 flex flex-col justify-center items-center border-2 border-dashed border-violet-300 rounded-lg bg-gradient-to-br from-white to-purple-100 p-4 sm:p-6 md:p-8 w-full">
-      <FaUpload size={40} className="text-violet-600 mb-4" />
-      <p className="text-violet-700 text-center text-sm sm:text-base">
-        Upload or Drag and Drop your Panoramic Radiographs
-      </p>
-      <p className="text-xs text-slate-500 mt-2">Max File Size: 20MB | Supported: .jpeg, .pdf</p>
+    <div
+      className="flex-1 flex flex-col justify-center items-center border-2 border-dashed border-violet-300 rounded-lg bg-gradient-to-br from-white to-purple-100 p-4 sm:p-6 md:p-8 w-full cursor-pointer"
+      onClick={handleBoxClick}
+      onDrop={handleDrop}
+      onDragOver={handleDragOver}
+    >
+      <input
+        ref={inputRef}
+        type="file"
+        accept=".jpeg,.jpg,.png,.pdf"
+        className="mt-4 hidden"
+        onChange={handleFileChange}
+      />
+      {!preview ? (
+        <>
+          <svg
+            width="40"
+            height="40"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            className="text-violet-600 mb-4"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5-5m0 0l5 5m-5-5v12"
+            />
+          </svg>
+          <p className="text-violet-700 text-center text-sm sm:text-base">
+            Upload or Drag and Drop your Panoramic Radiographs
+          </p>
+          <p className="text-xs text-slate-500 mt-2">
+            Max File Size: 20MB | Supported: .jpeg, .pdf
+          </p>
+        </>
+      ) : (
+        <div className="flex flex-col items-center w-full">
+          <img
+            src={preview}
+            alt="Preview"
+            className="max-h-48 rounded shadow mb-2"
+            style={{ objectFit: 'contain', maxWidth: '100%' }}
+          />
+          <div className="text-slate-700 text-sm mt-2">{fileName}</div>
+        </div>
+      )}
     </div>
   );
 }
