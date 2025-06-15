@@ -12,6 +12,9 @@ export default function FeedbackPage() {
   const [phone, setPhone] = useState('');
   const [country, setCountry] = useState('');
   const [extraFeedback, setExtraFeedback] = useState('');
+  const [uploadedFile, setUploadedFile] = useState<{name: string; data: string} | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitResult, setSubmitResult] = useState<{success: boolean; message: string} | null>(null);
 
   // Error selections
   const [chinError, setChinError] = useState('Chin Normal');
@@ -23,8 +26,27 @@ export default function FeedbackPage() {
   const [movementError, setMovementError] = useState('No Movement');
   const [biteblockError, setBiteblockError] = useState('Biteblock Present');
 
-  const handleSubmit = () => {
+  const handleFileSelect = (file: { name: string; data: string }) => {
+    setUploadedFile(file);
+    // Clear any previous submission results
+    setSubmitResult(null);
+  };
+
+  const handleSubmit = async () => {
+    if (!uploadedFile) {
+      setSubmitResult({
+        success: false,
+        message: 'Please upload an image before submitting feedback.'
+      });
+      return;
+    }
+    
+    setIsSubmitting(true);
+    setSubmitResult(null);
+    
     const feedbackData = {
+      name,
+      email,
       phone,
       country,
       extraFeedback,
@@ -37,7 +59,36 @@ export default function FeedbackPage() {
       movementError,
       biteblockError,
     };
-    console.log('Submit feedback:', feedbackData);
+    
+    try {
+      const result = await window.electron.sendFileForFeedback({
+        ...uploadedFile,
+        feedbackData
+      });
+      
+      if (result.success) {
+        setSubmitResult({
+          success: true,
+          message: 'Thank you for your feedback!'
+        });
+        // Reset form
+        setExtraFeedback('');
+        setUploadedFile(null);
+      } else {
+        setSubmitResult({
+          success: false,
+          message: result.error || 'Failed to submit feedback. Please try again.'
+        });
+      }
+    } catch (err) {
+      console.error('Feedback submission error:', err);
+      setSubmitResult({
+        success: false,
+        message: err instanceof Error ? err.message : 'An error occurred. Please try again.'
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -83,7 +134,13 @@ export default function FeedbackPage() {
 
           {/* Wrong Detection Report */}
           <div className="flex-1 flex flex-col gap-4">
-            <UploadBox />
+            <UploadBox usage="feedback" onFileSelect={handleFileSelect} />
+            
+            {uploadedFile && (
+              <div className="py-2 px-3 bg-green-50 border border-green-200 rounded text-sm text-green-700">
+                Image uploaded: {uploadedFile.name}
+              </div>
+            )}
 
             <ErrorCategory
               title="Chin Positioning Error"
@@ -146,9 +203,16 @@ export default function FeedbackPage() {
         <Button
           onClick={handleSubmit}
           className="mt-4 self-center"
+          disabled={isSubmitting}
         >
-          Submit My Feedback
+          {isSubmitting ? 'Submitting...' : 'Submit My Feedback'}
         </Button>
+
+        {submitResult && (
+          <div className={`mt-4 text-center ${submitResult.success ? 'text-green-600' : 'text-red-600'}`}>
+            {submitResult.message}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -17,9 +17,11 @@
     "transpile:electron": "tsc --project src/electron/tsconfig.json",
     "dist:mac": "npm run transpile:electron && npm run build && electron-builder --mac --arm64",
     "dist:linux": "npm run transpile:electron && npm run build && electron-builder --linux --arm64",
-    "dist:win": "npm run transpile:electron && npm run build && electron-builder --win --x64"
+    "dist:win": "npm run transpile:electron && npm run build && electron-builder --win --x64",
+    "rebuild": "electron-rebuild -f -w @tensorflow/tfjs-node"
   },
   "dependencies": {
+    "@tensorflow/tfjs": "^4.22.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-icons": "^5.5.0"
@@ -34,6 +36,7 @@
     "cross-env": "^7.0.3",
     "electron": "^36.4.0",
     "electron-builder": "^26.0.12",
+    "electron-rebuild": "^3.2.9",
     "eslint": "^9.25.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.19",

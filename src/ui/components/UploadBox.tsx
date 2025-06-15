@@ -1,6 +1,11 @@
 import React, { useRef, useState } from 'react';
 
-export default function UploadBox() {
+type UploadBoxProps = {
+  usage: 'inference' | 'feedback';
+  onFileSelect?: (file: { name: string; data: string }) => void;
+};
+
+export default function UploadBox({ usage, onFileSelect }: UploadBoxProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
@@ -12,19 +17,35 @@ export default function UploadBox() {
     if (file.type.startsWith('image/')) {
       const reader = new FileReader();
       reader.onload = () => {
-        setPreview(reader.result as string);
-        window.electron.sendFile({
+        const fileData = {
           name: file.name,
           data: reader.result as string,
-        });
+        };
+        setPreview(reader.result as string);
+
+        if (onFileSelect) {
+          onFileSelect(fileData);
+        } else if (usage === 'inference') {
+          window.electron.sendFileForInference(fileData);
+        } else {
+          window.electron.sendFileForFeedback(fileData);
+        }
       };
       reader.readAsDataURL(file);
     } else {
-      setPreview(null);
-      window.electron.sendFile({
+      const fileData = {
         name: file.name,
         data: '',
-      });
+      };
+      setPreview(null);
+
+      if (onFileSelect) {
+        onFileSelect(fileData);
+      } else if (usage === 'inference') {
+        window.electron.sendFileForInference(fileData);
+      } else {
+        window.electron.sendFileForFeedback(fileData);
+      }
     }
   };
 
@@ -40,19 +61,35 @@ export default function UploadBox() {
     if (file.type.startsWith('image/')) {
       const reader = new FileReader();
       reader.onload = () => {
-        setPreview(reader.result as string);
-        window.electron.sendFile({
+        const fileData = {
           name: file.name,
           data: reader.result as string,
-        });
+        };
+        setPreview(reader.result as string);
+
+        if (onFileSelect) {
+          onFileSelect(fileData);
+        } else if (usage === 'inference') {
+          window.electron.sendFileForInference(fileData);
+        } else {
+          window.electron.sendFileForFeedback(fileData);
+        }
       };
       reader.readAsDataURL(file);
     } else {
-      setPreview(null);
-      window.electron.sendFile({
+      const fileData = {
         name: file.name,
         data: '',
-      });
+      };
+      setPreview(null);
+
+      if (onFileSelect) {
+        onFileSelect(fileData);
+      } else if (usage === 'inference') {
+        window.electron.sendFileForInference(fileData);
+      } else {
+        window.electron.sendFileForFeedback(fileData);
+      }
     }
   };
 

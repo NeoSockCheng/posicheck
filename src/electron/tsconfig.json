@@ -10,5 +10,11 @@
         // ignore errors from dependencies
         "skipLibCheck": true,
         "types": ["../types/globalType"],
-    }
+        "baseUrl": "./",
+        "paths": {
+            "services/*": ["../services/*"]
+        },
+        "moduleResolution": "NodeNext"
+    },
+    "include": ["./**/*", "../services/**/*"]
 }
