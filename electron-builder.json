@@ -1,7 +1,11 @@
 {
     "appId": "com.neo.posicheck",
     "files": ["dist-electron", "dist-react"],
-    "icon": "./desktopIcon.png",
+    "icon": "./icon_posicheck.png",
+    "extraResources": [
+        "dist-electron/preload.cjs",
+        "src/ui/assets/**"
+    ],
     "mac": {
         "target": "dmg"
     },
