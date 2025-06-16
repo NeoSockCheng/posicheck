@@ -98,6 +98,56 @@ type EventPayloadMapping = {
             success: boolean;
             error?: string;
         }
+    };    getAllFeedback: {
+        request: { limit?: number; offset?: number };
+        response: {
+            success: boolean;
+            items?: Array<{
+                id: number;
+                imagePath: string;
+                timestamp: number;
+                accuracyRating: number;
+                errorTypes: string[];
+                extraFeedback?: string;
+            }>;
+            error?: string;
+        }
+    };
+    getFeedbackById: {
+        request: { id: number };
+        response: {
+            success: boolean;
+            item?: {
+                id: number;
+                imagePath: string;
+                timestamp: number;
+                accuracyRating: number;
+                errorTypes: string[];
+                extraFeedback?: string;
+            };
+            error?: string;
+        }
+    };    getFeedbackImage: {
+        request: { 
+            imagePath: string;
+            quality?: number;
+            maxWidth?: number;
+        };
+        response: {
+            success: boolean;
+            base64Image?: string;
+            error?: string;
+            debug?: any; // Added for debugging purposes
+        }
+    };
+    exportFeedback: {
+        request: {};
+        response: {
+            success: boolean;
+            exportPath?: string;
+            count?: number;
+            error?: string;
+        }
     };
     exitApp: {};
 }
@@ -192,6 +242,46 @@ interface Window {
         }>;
         saveUserProfile: (profile: UserProfile) => Promise<{
             success: boolean;
+            error?: string;
+        }>;
+          // Feedback methods
+        getAllFeedback: (options: { limit?: number; offset?: number }) => Promise<{
+            success: boolean;
+            items?: Array<{
+                id: number;
+                imagePath: string;
+                timestamp: number;
+                accuracyRating: number;
+                errorTypes: string[];
+                extraFeedback?: string;
+            }>;
+            error?: string;
+        }>;
+        getFeedbackById: (id: number) => Promise<{
+            success: boolean;
+            item?: {
+                id: number;
+                imagePath: string;
+                timestamp: number;
+                accuracyRating: number;
+                errorTypes: string[];
+                extraFeedback?: string;
+            };
+            error?: string;
+        }>;
+        getFeedbackImage: (params: { 
+            imagePath: string;
+            quality?: number;
+            maxWidth?: number;
+        }) => Promise<{
+            success: boolean;
+            base64Image?: string;
+            error?: string;
+        }>;
+        exportFeedback: () => Promise<{
+            success: boolean;
+            exportPath?: string;
+            count?: number;
             error?: string;
         }>;
         

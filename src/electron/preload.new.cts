@@ -47,7 +47,8 @@ electron.contextBridge.exposeInMainWorld('electron', {
     ipcInvoke('updateHistoryNotes', { id, notes }),
   getHistoryImageAsBase64: (params: { imagePath: string }) => 
     ipcInvoke('getHistoryImageAsBase64', params),
-      // Profile methods
+    
+  // Profile methods
   getUserProfile: () => 
     ipcInvoke('getUserProfile', {}),
   saveUserProfile: (profile: any) => 

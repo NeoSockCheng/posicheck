@@ -59,21 +59,17 @@ export async function processFeedback(name: string, data: string, feedbackData: 
         // Write the image file
         fs.writeFileSync(imagePath, Buffer.from(base64Data, 'base64'));
         
-        console.log('[DEBUG] Processing feedback submission with data:', feedbackData);
-        console.log('[DEBUG] Feedback image saved at:', imagePath);
+        console.log('Processing feedback submission with data:', feedbackData);
+        console.log('Feedback image saved at:', imagePath);
 
-        // Insert feedback data into the SQLite database - using ABSOLUTE path
+        // Insert feedback data into the SQLite database
         const stmt = db.prepare(`
             INSERT INTO feedback (image_path, timestamp, accuracy_rating, error_types, extra_feedback)
             VALUES (?, ?, ?, ?, ?)
         `);
         
-        // Make sure we're storing the absolute path to prevent issues with resolution
-        const absoluteImagePath = path.resolve(imagePath);
-        console.log('[DEBUG] Storing absolute image path in DB:', absoluteImagePath);
-        
         const info = stmt.run(
-            absoluteImagePath,
+            imagePath,
             timestamp,
             feedbackData.accuracyRating || 0,
             JSON.stringify(feedbackData.errorTypes || []),
@@ -88,7 +84,7 @@ export async function processFeedback(name: string, data: string, feedbackData: 
             id: feedbackId.toString()
         };
     } catch (error) {
-        console.error('[DEBUG] Feedback processing error:', error);
+        console.error('Feedback processing error:', error);
         const errorMessage = error instanceof Error ? error.message : 'Feedback submission failed';
         
         // Clean up image file if there was an error
@@ -176,42 +172,21 @@ export function getFeedbackById(id: number) {
  */
 export function getFeedbackImage(imagePath: string, quality = 90, maxWidth?: number) {
     try {
-        console.log(`[DEBUG] Trying to access image at path: ${imagePath}`);
-        
-        // Check if the provided path is absolute and exists
-        const isPathAccessible = fs.existsSync(imagePath);
-        
-        if (!isPathAccessible) {
-            console.log(`[DEBUG] Image file NOT FOUND: ${imagePath}`);
-            
-            // Try looking up by filename only, in case path is stored incorrectly
-            const filename = path.basename(imagePath);
-            const userDataPath = app.getPath('userData');
-            const feedbackImagesPath = path.join(userDataPath, 'feedback_images');
-            const alternativePath = path.join(feedbackImagesPath, filename);
-            
-            console.log(`[DEBUG] Trying alternative path: ${alternativePath}`);
-            
-            if (fs.existsSync(alternativePath)) {
-                console.log(`[DEBUG] Found image at alternative path: ${alternativePath}`);
-                const imageBuffer = fs.readFileSync(alternativePath);
-                const base64Image = `data:image/jpeg;base64,${imageBuffer.toString('base64')}`;
-                return { success: true, base64Image };
-            }
-            
-            return { success: false, error: 'Feedback image not found', debug: { original: imagePath, alternative: alternativePath } };
+        if (!fs.existsSync(imagePath)) {
+            return { success: false, error: 'Feedback image not found' };
         }
-          // Read the image file from the working path
-        console.log(`[DEBUG] Image found, reading file...`);
+        
+        // Read the image file
         const imageBuffer = fs.readFileSync(imagePath);
         const base64Image = `data:image/jpeg;base64,${imageBuffer.toString('base64')}`;
+        
         return { 
             success: true, 
             base64Image
         };
     } catch (error) {
-        console.error('[DEBUG] Error getting feedback image:', error);
-        return { success: false, error: 'Failed to retrieve feedback image', debug: error instanceof Error ? error.message : String(error) };
+        console.error('Error getting feedback image:', error);
+        return { success: false, error: 'Failed to retrieve feedback image' };
     }
 }
 
@@ -284,13 +259,14 @@ export async function exportFeedback() {
         }
         
         await archive.finalize();
-          // Wait for ZIP to finish
+        
+        // Wait for ZIP to finish
         await new Promise<void>((resolve, reject) => {
             output.on('close', () => {
                 resolve();
             });
             
-            archive.on('error', (err: Error) => {
+            archive.on('error', (err) => {
                 reject(err);
             });
         });

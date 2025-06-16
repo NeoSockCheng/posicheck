@@ -1,14 +1,15 @@
 import React, { useRef, useState } from 'react';
 
 type UploadBoxProps = {
-  usage: 'inference' | 'feedback';
+  usage?: 'inference' | 'feedback';
   onFileSelect?: (file: { name: string; data: string }) => void;
+  selectedFile?: { name: string; data: string } | null;
 };
 
-export default function UploadBox({ usage, onFileSelect }: UploadBoxProps) {
+export default function UploadBox({ usage = 'feedback', onFileSelect, selectedFile }: UploadBoxProps) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [preview, setPreview] = useState<string | null>(null);
-  const [fileName, setFileName] = useState<string | null>(null);
+  const [preview, setPreview] = useState<string | null>(selectedFile?.data || null);
+  const [fileName, setFileName] = useState<string | null>(selectedFile?.name || null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

@@ -12,7 +12,7 @@ const Button: React.FC<ButtonProps> = ({ onClick, children, className, disabled 
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`mt-6 font-semibold px-6 py-2 rounded-full transition ${
+      className={`font-semibold px-6 py-2 rounded-md transition ${
         disabled
           ? 'bg-gray-400 cursor-not-allowed text-gray-200'
           : 'bg-violet-600 hover:bg-violet-700 text-white'
