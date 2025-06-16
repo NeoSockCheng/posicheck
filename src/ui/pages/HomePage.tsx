@@ -21,7 +21,7 @@ export default function HomePage({ onTryDetection }: HomePageProps) {
           <p className="font-sans text-gray-600 max-w-xl mx-auto text-sm sm:text-base">
             AI-powered tool for detecting positioning errors in dental panoramic radiographs
           </p>
-          <Button onClick={onTryDetection}>Try the Detection</Button>
+          <Button onClick={onTryDetection}>Start Detection</Button>
         </div>
 
         {/* Right: Image */}

@@ -158,6 +158,7 @@ export default function FeedbackPage() {
         <div className="flex flex-col lg:flex-row gap-4 flex-1 bg-violet-200 rounded-lg p-4">
           {/* Personal Info */}
           <div className="flex-1">
+            <UploadBox usage="feedback" onFileSelect={handleFileSelect} />
             <InputField
               label="Full Name"
               value={name}
@@ -195,7 +196,6 @@ export default function FeedbackPage() {
 
           {/* Wrong Detection Report */}
           <div className="flex-1 flex flex-col gap-4">
-            <UploadBox usage="feedback" onFileSelect={handleFileSelect} />
             
             {uploadedFile && (
               <div className="py-2 px-3 bg-green-50 border border-green-200 rounded text-sm text-green-700">

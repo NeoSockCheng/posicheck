@@ -70,15 +70,24 @@ export function registerHistoryIPC() {
       return { success: false, error: errorMessage };
     }
   });
-
   // Get image as base64
-  ipcMain.handle('getHistoryImageAsBase64', async (_event, { imagePath }) => {
+  ipcMain.handle('getHistoryImageAsBase64', async (_event, { imagePath, quality, maxWidth, isThumb }) => {
     if (!imagePath) {
       return { success: false, error: 'No image path provided' };
     }
 
     try {
-      const base64Image = getHistoryImageAsBase64(imagePath);
+      // Use different quality settings for thumbnails vs full-size images
+      let imgQuality = quality || 85; // default quality
+      let imgMaxWidth = maxWidth || 1200; // default max width
+      
+      // For thumbnails, we can use lower quality and smaller max width
+      if (isThumb) {
+        imgQuality = 70;
+        imgMaxWidth = 600;
+      }
+      
+      const base64Image = getHistoryImageAsBase64(imagePath, imgQuality, imgMaxWidth);
       if (!base64Image) {
         return { success: false, error: 'Failed to load image' };
       }

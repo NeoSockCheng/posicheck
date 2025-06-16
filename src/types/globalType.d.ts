@@ -45,9 +45,13 @@ type EventPayloadMapping = {
             };
             error?: string;
         }
-    };
-    getHistoryImageAsBase64: {
-        request: { imagePath: string };
+    };    getHistoryImageAsBase64: {
+        request: { 
+            imagePath: string;
+            quality?: number;
+            maxWidth?: number;
+            isThumb?: boolean;
+        };
         response: {
             success: boolean;
             base64Image?: string;
@@ -145,8 +149,12 @@ interface Window {
         updateHistoryNotes: (id: number, notes: string) => Promise<{
             success: boolean;
             error?: string;
-        }>;
-        getHistoryImageAsBase64: (params: { imagePath: string }) => Promise<{
+        }>;        getHistoryImageAsBase64: (params: { 
+            imagePath: string;
+            quality?: number;
+            maxWidth?: number;
+            isThumb?: boolean;
+        }) => Promise<{
             success: boolean;
             base64Image?: string;
             error?: string;

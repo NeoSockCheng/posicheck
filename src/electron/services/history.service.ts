@@ -207,9 +207,15 @@ export function migrateHistoryFromJson(): number {
 /**
  * Get an image file as base64
  * @param imagePath Path to the image file
+ * @param quality Optional quality parameter (0-100) for JPEG images
+ * @param maxWidth Optional maximum width for large images
  * @returns Base64 encoded string of the image with data URL prefix
  */
-export function getHistoryImageAsBase64(imagePath: string): string | null {
+export function getHistoryImageAsBase64(
+  imagePath: string, 
+  quality: number = 85, 
+  maxWidth: number = 1200
+): string | null {
   try {
     // Check if file exists
     if (!fs.existsSync(imagePath)) {
@@ -219,7 +225,6 @@ export function getHistoryImageAsBase64(imagePath: string): string | null {
     
     // Read file and convert to base64
     const imageBuffer = fs.readFileSync(imagePath);
-    const base64Image = imageBuffer.toString('base64');
     
     // Determine MIME type based on file extension
     const ext = path.extname(imagePath).toLowerCase();
@@ -228,6 +233,10 @@ export function getHistoryImageAsBase64(imagePath: string): string | null {
     if (ext === '.png') mimeType = 'image/png';
     else if (ext === '.gif') mimeType = 'image/gif';
     else if (ext === '.webp') mimeType = 'image/webp';
+
+    // For now, just use basic base64 encoding
+    // Later we can add more sophisticated image processing if needed
+    const base64Image = imageBuffer.toString('base64');
     
     // Return data URL format
     return `data:${mimeType};base64,${base64Image}`;

@@ -53,9 +53,8 @@ export function Modal({ isOpen, onClose, title, children, footer }: ModalProps) 
             ×
           </button>
         </div>
-        
-        {/* Content */}
-        <div className="p-4 overflow-y-auto flex-1">
+          {/* Content */}
+        <div className="p-4 overflow-y-auto flex-1 text-gray-700">
           {children}
         </div>
         

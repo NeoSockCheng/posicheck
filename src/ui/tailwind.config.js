@@ -20,11 +20,19 @@ module.exports = {
         textSecondary: colors.slate[500],
         backgroundPrimary: colors.yellow[100],
         backgroundSecondary: colors.gray[300]
-      },
-      fontFamily: {
+      },      fontFamily: {
         sans: ['Poppins', 'sans-serif'], // Customize the font-sans
+      },
+      animation: {
+        fadeIn: 'fadeIn 0.5s ease-in-out',
+      },
+      keyframes: {
+        fadeIn: {
+          '0%': { opacity: '0', transform: 'translateY(10px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
       },
     },
   },
-  plugins: [],
+  plugins: [], // line-clamp is included by default in Tailwind v4
 };
