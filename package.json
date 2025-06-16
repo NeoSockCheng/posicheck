@@ -6,8 +6,7 @@
   "main": "dist-electron/main.js",
   "author": "Neo",
   "license": "MIT",
-  "description": "A positioning error detection app build with Electron.",
-  "scripts": {
+  "description": "A positioning error detection app build with Electron.",  "scripts": {
     "dev": "npm-run-all --parallel dev:react dev:electron",
     "dev:react": "vite",
     "dev:electron": "npm run transpile:electron && cross-env NODE_ENV=development electron .",
@@ -18,10 +17,11 @@
     "dist:mac": "npm run transpile:electron && npm run build && electron-builder --mac --arm64",
     "dist:linux": "npm run transpile:electron && npm run build && electron-builder --linux --arm64",
     "dist:win": "npm run transpile:electron && npm run build && electron-builder --win --x64",
-    "rebuild": "electron-rebuild -f -w @tensorflow/tfjs-node"
+    "rebuild": "electron-rebuild -f -w @tensorflow/tfjs-node better-sqlite3"
   },
   "dependencies": {
     "@tensorflow/tfjs": "^4.22.0",
+    "better-sqlite3": "^11.10.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-icons": "^5.5.0"
@@ -29,6 +29,7 @@
   "devDependencies": {
     "@eslint/js": "^9.25.0",
     "@tailwindcss/vite": "^4.1.8",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
     "@vitejs/plugin-react": "^4.4.1",

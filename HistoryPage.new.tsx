@@ -22,8 +22,6 @@ export default function HistoryPage() {
   const [toDate, setToDate] = useState('');
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [selectedItem, setSelectedItem] = useState<HistoryItem | null>(null);
-  const [selectedItemImage, setSelectedItemImage] = useState<string | null>(null);
-  const [imageLoading, setImageLoading] = useState(false);
   
   // Fetch history items from the database
   useEffect(() => {
@@ -47,26 +45,11 @@ export default function HistoryPage() {
       setLoading(false);
     }
   };
-  const handleView = async (id: number) => {
+
+  const handleView = (id: number) => {
     const item = historyItems.find(item => item.id === id);
     if (item) {
       setSelectedItem(item);
-      setSelectedItemImage(null);
-      setImageLoading(true);
-      
-      try {
-        // Load the image via IPC
-        const result = await window.electron.getHistoryImageAsBase64({ imagePath: item.imagePath });
-        if (result.success && result.base64Image) {
-          setSelectedItemImage(result.base64Image);
-        } else {
-          console.error('Failed to load image:', result.error);
-        }
-      } catch (err) {
-        console.error('Error loading image:', err);
-      } finally {
-        setImageLoading(false);
-      }
     }
   };
 
@@ -94,7 +77,6 @@ export default function HistoryPage() {
         subtitle="View the history of your detection attempts."
       />
 
-
       <div className="flex gap-2 justify-end p-1">
         {/* From Date */}
         <div className="flex items-center gap-1 border border-violet-300 rounded px-2 py-1">
@@ -119,7 +101,9 @@ export default function HistoryPage() {
           />
           <FaRegCalendarAlt className="text-violet-400" size={14} />
         </div>
-      </div>      {/* Display loading message */}
+      </div>
+
+      {/* Display loading message */}
       {loading && (
         <div className="flex justify-center items-center p-8">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-violet-500"></div>
@@ -208,22 +192,13 @@ export default function HistoryPage() {
         }
       >
         {selectedItem && (
-          <div>            <div className="mb-4">
-              {imageLoading ? (
-                <div className="w-full h-48 bg-gray-200 flex items-center justify-center rounded">
-                  <p className="text-gray-600">Loading image...</p>
-                </div>
-              ) : selectedItemImage ? (
-                <img 
-                  src={selectedItemImage}
-                  alt="Detection"
-                  className="w-full h-48 object-cover rounded"
-                />
-              ) : (
-                <div className="w-full h-48 bg-gray-200 flex items-center justify-center rounded">
-                  <p className="text-gray-600">Failed to load image</p>
-                </div>
-              )}
+          <div>
+            <div className="mb-4">
+              <img 
+                src={`file://${selectedItem.imagePath}`}
+                alt="Detection"
+                className="w-full h-48 object-cover rounded"
+              />
             </div>
             <div className="mb-4">
               <h3 className="font-medium text-gray-900">Date</h3>

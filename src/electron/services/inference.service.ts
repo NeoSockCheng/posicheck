@@ -1,6 +1,8 @@
 import * as tf from '@tensorflow/tfjs';
 import fs from 'fs';
 import path from 'path';
+import { app } from 'electron';
+import { saveDetectionHistory } from './history.service.js';
 
 const errorCols = [
     'chin_high', 'chin_low', 'pos_forward', 'pos_backward',
@@ -31,9 +33,19 @@ function generateMockPredictions(): Record<string, number> {
 }
 
 export async function runInference(name: string, data: string) {
-    // Save the image temporarily
+    // Create a permanent storage location for the image
+    const timestamp = Date.now();
     const ext = path.extname(name) || '.jpg';
-    const tempPath = path.join(process.cwd(), 'uploaded_' + Date.now() + ext);
+    const userDataPath = app.getPath('userData');
+    const imagesPath = path.join(userDataPath, 'detection_images');
+    
+    // Create directory if it doesn't exist
+    if (!fs.existsSync(imagesPath)) {
+        fs.mkdirSync(imagesPath, { recursive: true });
+    }
+    
+    const imageName = `detection_${timestamp}${ext}`;
+    const imagePath = path.join(imagesPath, imageName);
     const base64Data = data.split(',')[1]; // Remove data URL prefix
     
     if (!base64Data) {
@@ -42,28 +54,34 @@ export async function runInference(name: string, data: string) {
     }
     
     try {
-        // Write the file
-        fs.writeFileSync(tempPath, Buffer.from(base64Data, 'base64'));
-        
-        // For now, always use mock predictions since we're in Electron context
+        // Write the file to permanent storage
+        fs.writeFileSync(imagePath, Buffer.from(base64Data, 'base64'));
+          // For now, always use mock predictions since we're in Electron context
         // and the web version of TensorFlow.js can't load files directly
         console.log('Using mock inference for demonstration');
         const predictions = generateMockPredictions();
         
-        return { success: true, predictions };
+        // Save the detection results to the database
+        const historyId = await saveDetectionHistory(imagePath, predictions);
+        
+        return { 
+            success: true, 
+            predictions,
+            historyId
+        };
     } catch (error) {
         console.error('Inference error:', error);
         const errorMessage = error instanceof Error ? error.message : 'Inference failed';
-        return { success: false, error: errorMessage };
-    } finally {
-        // Clean up temporary file
+        
+        // Clean up the image file if there was an error
         try {
-            if (fs.existsSync(tempPath)) {
-                fs.unlinkSync(tempPath);
-                console.log('Cleaned up temporary file');
+            if (fs.existsSync(imagePath)) {
+                fs.unlinkSync(imagePath);
             }
         } catch (cleanupError) {
-            console.error('Error cleaning up temporary file:', cleanupError);
+            console.error('Error cleaning up image file:', cleanupError);
         }
+        
+        return { success: false, error: errorMessage };
     }
 }

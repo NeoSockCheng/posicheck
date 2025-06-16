@@ -24,11 +24,31 @@ function ipcSend<Key extends keyof EventPayloadMapping>(
 }
 
 electron.contextBridge.exposeInMainWorld('electron', {
+  // File sending methods
   sendFile: (file: { name: string; data: string }) => 
     ipcSend('uploadFile', file),
   sendFileForInference: (file: { name: string; data: string }) => 
     ipcInvoke('sendFileForInference', file),
   sendFileForFeedback: (file: { name: string; data: string; feedbackData?: any }) => 
     ipcInvoke('sendFileForFeedback', file),
+      // History methods
+  getHistoryItems: (options: { limit?: number; offset?: number }) => 
+    ipcInvoke('getHistoryItems', options),
+  getHistoryById: (id: number) => 
+    ipcInvoke('getHistoryById', { id }),
+  deleteHistoryItem: (id: number) => 
+    ipcInvoke('deleteHistoryItem', { id }),
+  updateHistoryNotes: (id: number, notes: string) => 
+    ipcInvoke('updateHistoryNotes', { id, notes }),
+  getHistoryImageAsBase64: (params: { imagePath: string }) => 
+    ipcInvoke('getHistoryImageAsBase64', params),
+    
+  // Profile methods
+  getUserProfile: () => 
+    ipcInvoke('getUserProfile', {}),
+  saveUserProfile: (profile: any) => 
+    ipcInvoke('saveUserProfile', profile),
+    
+  // App control methods
   exitApp: () => ipcSend('exitApp', {})
 } satisfies Window['electron']);

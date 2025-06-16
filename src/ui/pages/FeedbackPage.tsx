@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Button from '../components/Button';
 import InputField from '../components/InputField';
 import ErrorCategory from '../components/ErrorCategory';
@@ -11,10 +11,13 @@ export default function FeedbackPage() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [country, setCountry] = useState('');
+  const [organization, setOrganization] = useState('');
   const [extraFeedback, setExtraFeedback] = useState('');
   const [uploadedFile, setUploadedFile] = useState<{name: string; data: string} | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitResult, setSubmitResult] = useState<{success: boolean; message: string} | null>(null);
+  // Track if the profile is finished loading (used internally for future error handling)
+  const [originalProfile, setOriginalProfile] = useState<any>(null);
 
   // Error selections
   const [chinError, setChinError] = useState('Chin Normal');
@@ -26,12 +29,34 @@ export default function FeedbackPage() {
   const [movementError, setMovementError] = useState('No Movement');
   const [biteblockError, setBiteblockError] = useState('Biteblock Present');
 
+  // Load profile data on component mount
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const result = await window.electron.getUserProfile();
+        if (result.success && result.profile) {
+          // Set the form fields with profile data
+          setName(result.profile.name);
+          setEmail(result.profile.email);
+          setPhone(result.profile.phone);
+          setCountry(result.profile.country);
+          setOrganization(result.profile.organization);
+          
+          // Keep a copy of the original profile
+          setOriginalProfile(result.profile);
+        }      } catch (error) {
+        console.error('Failed to load user profile:', error);
+      }
+    };
+
+    loadProfile();
+  }, []);
+
   const handleFileSelect = (file: { name: string; data: string }) => {
     setUploadedFile(file);
     // Clear any previous submission results
     setSubmitResult(null);
   };
-
   const handleSubmit = async () => {
     if (!uploadedFile) {
       setSubmitResult({
@@ -43,24 +68,55 @@ export default function FeedbackPage() {
     
     setIsSubmitting(true);
     setSubmitResult(null);
+      // Collect error types that aren't "normal" to store in the database
+    const errorTypes = [];
+    if (chinError !== 'Chin Normal') errorTypes.push(chinError);
+    if (positionError !== 'Position Normal') errorTypes.push(positionError);
+    if (headTilt !== 'No Tilt') errorTypes.push(headTilt);
+    if (headRotation !== 'No Rotation') errorTypes.push(headRotation);
+    if (tongueError !== 'Tongue Properly Positioned') errorTypes.push(tongueError);
+    if (slumpedPosition !== 'Upright') errorTypes.push(slumpedPosition);
+    if (movementError !== 'No Movement') errorTypes.push(movementError);
+    if (biteblockError !== 'Biteblock Present') errorTypes.push(biteblockError);
+    
+    // Calculate an accuracy rating (inverse of how many errors they reported)
+    // More errors = lower accuracy of our detection
+    const errorCount = errorTypes.length;
+    const accuracyRating = Math.max(5 - errorCount, 1); // 5 = perfect, 1 = lots of issues
     
     const feedbackData = {
-      name,
-      email,
-      phone,
-      country,
+      userInfo: {
+        name,
+        email,
+        phone,
+        country,
+        organization,
+      },
+      accuracyRating,
+      errorTypes,
       extraFeedback,
-      chinError,
-      positionError,
-      headTilt,
-      headRotation,
-      tongueError,
-      slumpedPosition,
-      movementError,
-      biteblockError,
     };
     
     try {
+      // Update the user profile if information has changed
+      if (originalProfile && (
+        name !== originalProfile.name ||
+        email !== originalProfile.email ||
+        phone !== originalProfile.phone ||
+        country !== originalProfile.country ||
+        organization !== originalProfile.organization
+      )) {
+        console.log('Profile information has changed, updating...');
+        await window.electron.saveUserProfile({
+          ...originalProfile,
+          name,
+          email,
+          phone,
+          country,
+          organization,
+        });
+      }
+      
       const result = await window.electron.sendFileForFeedback({
         ...uploadedFile,
         feedbackData
@@ -123,6 +179,11 @@ export default function FeedbackPage() {
               label="Country"
               value={country}
               onChange={setCountry}
+            />
+            <InputField
+              label="Organization"
+              value={organization}
+              onChange={setOrganization}
             />
             <InputField
               label="Extra Feedback"

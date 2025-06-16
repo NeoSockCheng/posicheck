@@ -13,6 +13,7 @@ import { BsPersonStanding } from "react-icons/bs";
 type InferenceResponse = {
   success: boolean;
   predictions?: Record<string, number>;
+  historyId?: number;
   error?: string;
 };
 
@@ -200,11 +201,14 @@ export default function DetectionPage() {
         console.error('Inference result is undefined');
         setError('Failed to process image. No response from backend.');
         return;
-      }
-
-      if (result.success && result.predictions) {
+      }      if (result.success && result.predictions) {
         console.log('Predictions received:', result.predictions);
         setPredictions(result.predictions);
+        
+        // Log the history ID if available (saved in SQLite database)
+        if (result.historyId) {
+          console.log('Detection saved in history with ID:', result.historyId);
+        }
       } else {
         console.error('Inference failed:', result.error);
         setError(result.error || 'Failed to process image');

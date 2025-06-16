@@ -1,6 +1,7 @@
 import { FaEye, FaTrash } from 'react-icons/fa';
 
 type HistoryCardProps = {
+  id?: number; // Optional for backward compatibility
   date: string;
   error: string;
   imageUrl: string;

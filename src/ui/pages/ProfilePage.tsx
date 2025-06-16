@@ -1,49 +1,98 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Header from '../components/Header';
 import Avatar from '../components/Avatar';
 import InputField from '../components/InputField';
 import { imageSampleProfile } from '../assets/assets';
 import { FaSave, FaPen, FaTimes } from 'react-icons/fa';
 
-type UserProfile = {
+interface UserProfile {
+  id?: number;
   name: string;
   email: string;
   phone: string;
   country: string;
-};
+  organization: string; // Changed from optional to required to match backend
+  createdAt?: number;
+  updatedAt?: number;
+}
 
 export default function ProfilePage() {
-  // Initial user data
+  // Initial empty user data
   const initialUserData: UserProfile = {
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    phone: '+1234567890',
-    country: 'United States',
+    name: '',
+    email: '',
+    phone: '',
+    country: '',
+    organization: '',
   };
 
   const [user, setUser] = useState<UserProfile>(initialUserData);
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState<UserProfile>(initialUserData);
+  const [isLoading, setIsLoading] = useState(true);
+  const [saveStatus, setSaveStatus] = useState<{success: boolean; message: string} | null>(null);
 
-  const handleEdit = () => {
+  // Load profile on component mount
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const result = await window.electron.getUserProfile();
+        if (result.success && result.profile) {
+          setUser(result.profile);
+          setEditData(result.profile);
+        }
+      } catch (error) {
+        console.error('Failed to load user profile:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadProfile();
+  }, []);
+
+  const handleEdit = async () => {
     if (isEditing) {
       // Save changes
-      setUser({...editData});
+      setSaveStatus(null);
+      try {
+        const result = await window.electron.saveUserProfile(editData);
+        if (result.success) {
+          setUser({...editData});
+          setSaveStatus({
+            success: true,
+            message: 'Profile saved successfully!'
+          });
+        } else {
+          setSaveStatus({
+            success: false,
+            message: result.error || 'Failed to save profile'
+          });
+        }
+      } catch (error) {
+        console.error('Error saving profile:', error);
+        setSaveStatus({
+          success: false,
+          message: error instanceof Error ? error.message : 'An error occurred while saving'
+        });
+      }
       setIsEditing(false);
     } else {
       // Start editing
       setEditData({...user});
       setIsEditing(true);
+      setSaveStatus(null);
     }
   };
 
   const handleCancel = () => {
     setIsEditing(false);
     setEditData({...user});
+    setSaveStatus(null);
   };
 
   const handleChange = (field: keyof UserProfile, value: string) => {
-    setEditData(prev => ({
+    setEditData((prev: UserProfile) => ({
       ...prev,
       [field]: value,
     }));
@@ -72,8 +121,9 @@ export default function ProfilePage() {
           {/* Profile Content */}
           <div className="p-6">
             {/* Action Buttons */}
-            <div className="flex justify-end mb-6">
-              {isEditing ? (
+            <div className="flex justify-end mb-6">              {isLoading ? (
+                <div className="px-4 py-2 text-gray-500">Loading...</div>
+              ) : isEditing ? (
                 <>
                   <button
                     onClick={handleEdit}
@@ -96,8 +146,13 @@ export default function ProfilePage() {
                   <FaPen className="mr-2" /> Edit Profile
                 </button>
               )}
-            </div>
-
+            </div>            {/* Save Status Message */}
+            {saveStatus && (
+              <div className={`mb-4 p-2 rounded text-center ${saveStatus.success ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                {saveStatus.message}
+              </div>
+            )}
+            
             {/* Profile Fields */}
             <div className="divide-y divide-gray-100">
               {isEditing ? (
@@ -123,25 +178,34 @@ export default function ProfilePage() {
                     value={editData.country}
                     onChange={(value) => handleChange('country', value)}
                   />
+                  <InputField
+                    label="Organization"
+                    value={editData.organization}
+                    onChange={(value) => handleChange('organization', value)}
+                  />
                 </div>
               ) : (
                 // View Mode
                 <>
                   <div className="py-4">
                     <label className="block text-violet-800 text-xs font-semibold uppercase mb-1">Name</label>
-                    <p className="text-gray-700">{user.name}</p>
+                    <p className="text-gray-700">{user.name || 'Not set'}</p>
                   </div>
                   <div className="py-4">
                     <label className="block text-violet-800 text-xs font-semibold uppercase mb-1">Email</label>
-                    <p className="text-gray-700">{user.email}</p>
+                    <p className="text-gray-700">{user.email || 'Not set'}</p>
                   </div>
                   <div className="py-4">
                     <label className="block text-violet-800 text-xs font-semibold uppercase mb-1">Phone</label>
-                    <p className="text-gray-700">{user.phone}</p>
+                    <p className="text-gray-700">{user.phone || 'Not set'}</p>
                   </div>
                   <div className="py-4">
                     <label className="block text-violet-800 text-xs font-semibold uppercase mb-1">Country</label>
-                    <p className="text-gray-700">{user.country}</p>
+                    <p className="text-gray-700">{user.country || 'Not set'}</p>
+                  </div>
+                  <div className="py-4">
+                    <label className="block text-violet-800 text-xs font-semibold uppercase mb-1">Organization</label>
+                    <p className="text-gray-700">{user.organization || 'Not set'}</p>
                   </div>
                 </>
               )}
