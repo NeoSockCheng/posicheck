@@ -31,7 +31,12 @@ electron.contextBridge.exposeInMainWorld('electron', {
     ipcInvoke('sendFileForInference', file),
   sendFileForFeedback: (file: { name: string; data: string; feedbackData?: any }) => 
     ipcInvoke('sendFileForFeedback', file),
-      // History methods
+    
+  // Added saveToHistory method
+  saveToHistory: (params: { imagePath: string; predictions: Record<string, number>; notes?: string }) => 
+    ipcInvoke('saveToHistory', params),
+    
+  // History methods
   getHistoryItems: (options: { limit?: number; offset?: number }) => 
     ipcInvoke('getHistoryItems', options),
   getHistoryById: (id: number) => 

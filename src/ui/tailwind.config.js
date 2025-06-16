@@ -34,5 +34,27 @@ module.exports = {
       },
     },
   },
-  plugins: [], // line-clamp is included by default in Tailwind v4
+  plugins: [
+    function({ addUtilities }) {
+      const newUtilities = {
+        '.custom-scrollbar': {
+          '&::-webkit-scrollbar': {
+            width: '8px',
+            height: '8px',
+          },
+          '&::-webkit-scrollbar-track': {
+            backgroundColor: 'transparent',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            backgroundColor: 'rgba(156, 163, 175, 0.5)', // gray-400 with opacity
+            borderRadius: '4px',
+          },
+          '&::-webkit-scrollbar-thumb:hover': {
+            backgroundColor: 'rgba(107, 114, 128, 0.6)', // gray-500 with opacity
+          },
+        },
+      };
+      addUtilities(newUtilities);
+    },
+  ], // line-clamp is included by default in Tailwind v4
 };

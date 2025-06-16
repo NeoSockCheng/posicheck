@@ -1,5 +1,5 @@
 import { ipcMain } from 'electron';
-import { getHistoryItems, getHistoryById, deleteHistoryItem, updateHistoryNotes, getHistoryImageAsBase64 } from '../services/history.service.js';
+import { getHistoryItems, getHistoryById, deleteHistoryItem, updateHistoryNotes, getHistoryImageAsBase64, saveDetectionHistory } from '../services/history.service.js';
 
 export function registerHistoryIPC() {
   // Get history items with pagination
@@ -29,6 +29,22 @@ export function registerHistoryIPC() {
     } catch (error) {
       console.error(`Error getting history item ${id}:`, error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to retrieve history item';
+      return { success: false, error: errorMessage };
+    }
+  });
+
+  // Save detection results to history
+  ipcMain.handle('saveToHistory', async (_event, { imagePath, predictions, notes }) => {
+    if (!imagePath || !predictions) {
+      return { success: false, error: 'Missing required data (image path or predictions)' };
+    }
+
+    try {
+      const historyId = await saveDetectionHistory(imagePath, predictions, notes);
+      return { success: true, historyId };
+    } catch (error) {
+      console.error('Error saving to history:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save to history';
       return { success: false, error: errorMessage };
     }
   });

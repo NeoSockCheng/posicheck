@@ -5,7 +5,7 @@ type EventPayloadMapping = {
         response: { 
             success: boolean; 
             predictions?: Record<string, number>; 
-            historyId?: number;
+            imagePath?: string;  // Changed from historyId to imagePath
             error?: string; 
         }
     };
@@ -15,6 +15,18 @@ type EventPayloadMapping = {
             success: boolean;
             message?: string;
             id?: string;
+            error?: string;
+        }
+    };
+    saveToHistory: {
+        request: { 
+            imagePath: string; 
+            predictions: Record<string, number>;
+            notes?: string;
+        };
+        response: {
+            success: boolean;
+            historyId?: number;
             error?: string;
         }
     };
@@ -110,7 +122,7 @@ interface Window {
         sendFileForInference: (file: { name: string; data: string }) => Promise<{
             success: boolean;
             predictions?: Record<string, number>;
-            historyId?: number;
+            imagePath?: string;  // Changed from historyId to imagePath
             error?: string;
         }>;
         sendFileForFeedback: (file: { name: string; data: string; feedbackData?: any }) => Promise<{
@@ -119,7 +131,19 @@ interface Window {
             id?: string;
             error?: string;
         }>;
-          // History methods
+        
+        // Added saveToHistory method
+        saveToHistory: (params: { 
+            imagePath: string; 
+            predictions: Record<string, number>;
+            notes?: string;
+        }) => Promise<{
+            success: boolean;
+            historyId?: number;
+            error?: string;
+        }>;
+          
+        // History methods
         getHistoryItems: (options: { limit?: number; offset?: number }) => Promise<{
             success: boolean;
             items?: Array<{

@@ -152,57 +152,62 @@ export default function FeedbackPage() {
       <Header
         title="Submit Your Feedback"
         subtitle="Help us improve our error detection by providing your feedback."
-      />
-
-      <div className="flex flex-col flex-1 p-4">
-        <div className="flex flex-col lg:flex-row gap-4 flex-1 bg-violet-200 rounded-lg p-4">
-          {/* Personal Info */}
-          <div className="flex-1">
+      />      <div className="flex flex-col flex-1 p-4">
+        <div className="flex flex-col lg:flex-row gap-4 flex-1 bg-violet-200 rounded-lg p-4 custom-scrollbar overflow-auto">
+          {/* Personal Info */}<div className="flex-1">
             <UploadBox usage="feedback" onFileSelect={handleFileSelect} />
-            <InputField
-              label="Full Name"
-              value={name}
-              onChange={setName}
-            />
+            
+            {/* Added mt-4 for spacing below upload box */}
+            {uploadedFile && (
+              <div className="mt-4 py-2 px-3 bg-green-50 border border-green-200 rounded text-sm text-green-700">
+                Image uploaded: {uploadedFile.name}
+              </div>
+            )}
+            
+            {/* Added mt-6 for more significant spacing before form fields */}
+            <div className="mt-6">
+              <InputField
+                label="Full Name"
+                value={name}
+                onChange={setName}
+              />
 
-            <InputField
-              label="Email"
-              value={email}
-              onChange={setEmail}
-            />
+              <InputField
+                label="Email"
+                value={email}
+                onChange={setEmail}
+              />
 
-            <InputField
-              label="Phone Number"
-              value={phone}
-              onChange={setPhone}
-            />
-            <InputField
-              label="Country"
-              value={country}
-              onChange={setCountry}
-            />
-            <InputField
-              label="Organization"
-              value={organization}
-              onChange={setOrganization}
-            />
-            <InputField
-              label="Extra Feedback"
-              value={extraFeedback}
-              onChange={setExtraFeedback}
-              textarea
-            />
+              <InputField
+                label="Phone Number"
+                value={phone}
+                onChange={setPhone}
+              />
+              
+              <InputField
+                label="Country"
+                value={country}
+                onChange={setCountry}
+              />
+              
+              <InputField
+                label="Organization"
+                value={organization}
+                onChange={setOrganization}
+              />
+              
+              <InputField
+                label="Extra Feedback"
+                value={extraFeedback}
+                onChange={setExtraFeedback}
+                textarea
+              />
+            </div>
           </div>
 
           {/* Wrong Detection Report */}
           <div className="flex-1 flex flex-col gap-4">
             
-            {uploadedFile && (
-              <div className="py-2 px-3 bg-green-50 border border-green-200 rounded text-sm text-green-700">
-                Image uploaded: {uploadedFile.name}
-              </div>
-            )}
-
             <ErrorCategory
               title="Chin Positioning Error"
               options={['Chin Normal', 'Chin Too High', 'Chin Too Low']}

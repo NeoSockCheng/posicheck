@@ -52,9 +52,8 @@ export function Modal({ isOpen, onClose, title, children, footer }: ModalProps) 
           >
             ×
           </button>
-        </div>
-          {/* Content */}
-        <div className="p-4 overflow-y-auto flex-1 text-gray-700">
+        </div>        {/* Content */}
+        <div className="p-4 overflow-y-auto flex-1 text-gray-700 custom-scrollbar">
           {children}
         </div>
         

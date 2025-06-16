@@ -4,7 +4,7 @@ import ErrorCard from '../components/ErrorCard';
 import Header from '../components/Header';
 import {
   FaArrowsAltH, FaSyncAlt, FaUserSlash,
-  FaRunning, FaTooth, FaTimes
+  FaRunning, FaTooth, FaTimes, FaSave
 } from 'react-icons/fa';
 import { GiBeard, GiTongue  } from "react-icons/gi";
 import { BsPersonStanding } from "react-icons/bs";
@@ -13,7 +13,7 @@ import { BsPersonStanding } from "react-icons/bs";
 type InferenceResponse = {
   success: boolean;
   predictions?: Record<string, number>;
-  historyId?: number;
+  imagePath?: string;  // Updated to return image path instead of historyId
   error?: string;
 };
 
@@ -176,11 +176,18 @@ export default function DetectionPage() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [currentVideo, setCurrentVideo] = useState<string | null>(null);
-  
-  const handleInferenceResult = async (file: { name: string; data: string }) => {
+  const [imagePath, setImagePath] = useState<string | null>(null);
+  const [imageData, setImageData] = useState<string | null>(null);
+  const [fileName, setFileName] = useState<string | null>(null);
+  const [notes, setNotes] = useState<string>('');
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [saveSuccess, setSaveSuccess] = useState<boolean | null>(null);  const handleInferenceResult = async (file: { name: string; data: string }) => {
     try {
       setIsLoading(true);
       setError(null);
+      setSaveSuccess(null);
+      setImageData(file.data);
+      setFileName(file.name);
       
       console.log('Sending file for inference:', file.name);
       
@@ -201,14 +208,12 @@ export default function DetectionPage() {
         console.error('Inference result is undefined');
         setError('Failed to process image. No response from backend.');
         return;
-      }      if (result.success && result.predictions) {
+      }
+      
+      if (result.success && result.predictions) {
         console.log('Predictions received:', result.predictions);
         setPredictions(result.predictions);
-        
-        // Log the history ID if available (saved in SQLite database)
-        if (result.historyId) {
-          console.log('Detection saved in history with ID:', result.historyId);
-        }
+        setImagePath(result.imagePath || null);
       } else {
         console.error('Inference failed:', result.error);
         setError(result.error || 'Failed to process image');
@@ -243,6 +248,42 @@ export default function DetectionPage() {
     setCurrentVideo(null);
   };
 
+  const handleSaveToHistory = async () => {
+    if (!predictions || !imagePath) {
+      setError('No detection results to save');
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      setSaveSuccess(null);
+
+      const response = await window.electron.saveToHistory({
+        imagePath,
+        predictions,
+        notes: notes.trim() || undefined
+      });
+
+      if (response.success) {
+        setSaveSuccess(true);
+        console.log('Detection saved to history with ID:', response.historyId);
+      } else {
+        setSaveSuccess(false);
+        setError(response.error || 'Failed to save to history');
+      }
+    } catch (err) {
+      console.error('Error saving to history:', err);
+      setSaveSuccess(false);
+      if (err instanceof Error) {
+        setError(`Error: ${err.message}`);
+      } else {
+        setError('Error saving detection. Please try again.');
+      }
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="flex flex-col flex-1 bg-gray-50">
       <Header
@@ -250,28 +291,88 @@ export default function DetectionPage() {
         subtitle="Identify and understand common positioning issues in your dental panoramic radiographs."
       />
 
-      {/* Main Content */}      <div className="flex flex-col lg:flex-row gap-4 p-8 flex-1">
-        <div className="flex flex-col items-center lg:items-start w-full lg:w-[40%]">
-          <UploadBox usage="inference" onFileSelect={handleInferenceResult} />
-          {isLoading && (
-            <div className="mt-3 text-center py-4 bg-violet-100 rounded animate-pulse">
-              <div className="flex items-center justify-center space-x-2">
-                <svg className="animate-spin h-5 w-5 text-violet-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <p className="text-violet-700 font-medium">Processing image...</p>
+      {/* Main Content */}      <div className="flex flex-col gap-4 p-8 flex-1">
+        {/* Upload and Save History Section - Now side by side on top */}
+        <div className="flex flex-col lg:flex-row gap-6 w-full">
+          {/* Upload box - Full width when no results, half width when results are showing */}
+          <div className={`flex flex-col items-center lg:items-start w-full ${predictions && imagePath ? 'lg:w-1/2' : 'w-full'}`}>
+            <UploadBox usage="inference" onFileSelect={handleInferenceResult} />
+            {isLoading && (
+              <div className="mt-3 text-center py-4 bg-violet-100 rounded animate-pulse w-full">
+                <div className="flex items-center justify-center space-x-2">
+                  <svg className="animate-spin h-5 w-5 text-violet-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <p className="text-violet-700 font-medium">Processing image...</p>
+                </div>
+                <p className="text-violet-600 text-sm mt-2">This may take a few seconds</p>
               </div>
-              <p className="text-violet-600 text-sm mt-2">This may take a few seconds</p>
+            )}
+            {error && (
+              <div className="mt-3 text-center py-4 bg-red-100 rounded w-full">
+                <p className="text-red-700 font-medium">{error}</p>
+                <p className="text-red-600 text-sm mt-1">Please try again or use a different image</p>
+              </div>
+            )}
+          </div>
+
+          {/* Save to history section - Appears to the right of the upload box when there are results */}
+          {predictions && imagePath && (
+            <div className="w-full lg:w-1/2 bg-violet-50 border border-violet-200 rounded-lg p-4">
+              <h3 className="text-lg font-medium text-violet-800 mb-2">Save to History</h3>
+              
+              <div className="mb-3">
+                <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
+                  Notes (Optional)
+                </label>
+                <textarea
+                  id="notes"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Add any additional notes about this detection..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-violet-500 focus:border-violet-500 sm:text-sm text-slate-700"
+                  rows={3}
+                />
+              </div>
+              
+              <button
+                onClick={handleSaveToHistory}
+                disabled={isSaving || saveSuccess === true}
+                className={`flex items-center justify-center w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white 
+                  ${saveSuccess === true 
+                    ? 'bg-green-600 hover:bg-green-700' 
+                    : 'bg-violet-600 hover:bg-violet-700'} 
+                  focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500 transition-colors`}
+              >
+                {isSaving ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Saving...
+                  </>
+                ) : saveSuccess === true ? (
+                  <>
+                    <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    Saved to History
+                  </>
+                ) : (
+                  <>
+                    <FaSave className="mr-2" />
+                    Save to History
+                  </>
+                )}
+              </button>
             </div>
           )}
-          {error && (
-            <div className="mt-3 text-center py-4 bg-red-100 rounded">
-              <p className="text-red-700 font-medium">{error}</p>
-              <p className="text-red-600 text-sm mt-1">Please try again or use a different image</p>
-            </div>
-          )}
-        </div>        <section className="flex-1 flex flex-col gap-2 w-full">
+        </div>
+
+        {/* Error Cards Section - Now below upload and save */}
+        <section className="w-full flex flex-col gap-2">
           {/* Sort errors so that detected ones appear at the top */}
           {detectionErrors
             .map((error) => {
@@ -309,7 +410,7 @@ export default function DetectionPage() {
             ))
           }
           {predictions && (
-            <div className="mt-4 p-3 bg-slate-100 rounded text-sm text-slate-600">
+            <div className="mt-2 p-3 bg-slate-100 rounded text-sm text-slate-600">
               <p>Results based on analysis of the uploaded image. Consult with a dental professional for confirmation.</p>
             </div>
           )}

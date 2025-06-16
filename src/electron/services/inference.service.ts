@@ -2,7 +2,6 @@ import * as tf from '@tensorflow/tfjs';
 import fs from 'fs';
 import path from 'path';
 import { app } from 'electron';
-import { saveDetectionHistory } from './history.service.js';
 
 const errorCols = [
     'chin_high', 'chin_low', 'pos_forward', 'pos_backward',
@@ -61,13 +60,13 @@ export async function runInference(name: string, data: string) {
         console.log('Using mock inference for demonstration');
         const predictions = generateMockPredictions();
         
-        // Save the detection results to the database
-        const historyId = await saveDetectionHistory(imagePath, predictions);
+        // No longer automatically save to history - user will do this manually
+        // const historyId = await saveDetectionHistory(imagePath, predictions);
         
         return { 
             success: true, 
             predictions,
-            historyId
+            imagePath   // Return the image path instead of historyId
         };
     } catch (error) {
         console.error('Inference error:', error);
