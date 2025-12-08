@@ -46,10 +46,23 @@ const detectionErrors = [  {
     },
     getMessage: (predictions: ErrorPredictions) => {
       if (!predictions) return '';
-      if (predictions.chin_high && predictions.chin_high > ERROR_THRESHOLD) {
-        return `Chin too high detected - Confidence: ${(predictions.chin_high * 100).toFixed(1)}%`;
-      } else if (predictions.chin_low && predictions.chin_low > ERROR_THRESHOLD) {
-        return `Chin too low detected - Confidence: ${(predictions.chin_low * 100).toFixed(1)}%`;
+      const highVal = predictions.chin_high || 0;
+      const lowVal = predictions.chin_low || 0;
+      
+      // Both exceed threshold - show the higher one
+      if (highVal > ERROR_THRESHOLD && lowVal > ERROR_THRESHOLD) {
+        if (highVal >= lowVal) {
+          return `Chin too high detected - Confidence: ${(highVal * 100).toFixed(1)}%`;
+        } else {
+          return `Chin too low detected - Confidence: ${(lowVal * 100).toFixed(1)}%`;
+        }
+      }
+      // Only one exceeds threshold
+      if (highVal > ERROR_THRESHOLD) {
+        return `Chin too high detected - Confidence: ${(highVal * 100).toFixed(1)}%`;
+      }
+      if (lowVal > ERROR_THRESHOLD) {
+        return `Chin too low detected - Confidence: ${(lowVal * 100).toFixed(1)}%`;
       }
       return 'No chin position errors detected';
     }
@@ -65,10 +78,23 @@ const detectionErrors = [  {
     },
     getMessage: (predictions: ErrorPredictions) => {
       if (!predictions) return '';
-      if (predictions.pos_forward && predictions.pos_forward > ERROR_THRESHOLD) {
-        return `Position too far forward - Confidence: ${(predictions.pos_forward * 100).toFixed(1)}%`;
-      } else if (predictions.pos_backward && predictions.pos_backward > ERROR_THRESHOLD) {
-        return `Position too far backward - Confidence: ${(predictions.pos_backward * 100).toFixed(1)}%`;
+      const forwardVal = predictions.pos_forward || 0;
+      const backwardVal = predictions.pos_backward || 0;
+      
+      // Both exceed threshold - show the higher one
+      if (forwardVal > ERROR_THRESHOLD && backwardVal > ERROR_THRESHOLD) {
+        if (forwardVal >= backwardVal) {
+          return `Position too far forward - Confidence: ${(forwardVal * 100).toFixed(1)}%`;
+        } else {
+          return `Position too far backward - Confidence: ${(backwardVal * 100).toFixed(1)}%`;
+        }
+      }
+      // Only one exceeds threshold
+      if (forwardVal > ERROR_THRESHOLD) {
+        return `Position too far forward - Confidence: ${(forwardVal * 100).toFixed(1)}%`;
+      }
+      if (backwardVal > ERROR_THRESHOLD) {
+        return `Position too far backward - Confidence: ${(backwardVal * 100).toFixed(1)}%`;
       }
       return 'No positioning errors detected';
     }

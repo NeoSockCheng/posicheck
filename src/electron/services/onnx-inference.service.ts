@@ -139,6 +139,14 @@ async function preprocessImage(imagePath: string): Promise<Float32Array> {
 }
 
 /**
+ * Apply sigmoid activation to convert logits to probabilities
+ * sigmoid(x) = 1 / (1 + e^(-x))
+ */
+function sigmoid(x: number): number {
+    return 1 / (1 + Math.exp(-x));
+}
+
+/**
  * Run inference on an image and return the predicted class index
  * 
  * @param imagePath Absolute path to the image file
@@ -185,10 +193,13 @@ export async function runOnnxInference(
             throw new Error('Invalid output from model');
         }
         
-        // Convert output to array
-        const outputData = Array.from(outputTensor.data as Float32Array);
+        // Convert output to array and apply sigmoid
+        const rawOutput = Array.from(outputTensor.data as Float32Array);
+        const outputData = rawOutput.map(sigmoid); // Apply sigmoid to convert logits to probabilities
+        
         console.log(`Model output shape: ${outputTensor.dims}`);
-        console.log(`Output probabilities (first 10):`, outputData.slice(0, 10).map(v => v.toFixed(4)));
+        console.log(`Raw logits (first 10):`, rawOutput.slice(0, 10).map(v => v.toFixed(4)));
+        console.log(`Probabilities (first 10):`, outputData.slice(0, 10).map(v => v.toFixed(4)));
         
         // Find index of maximum probability
         let maxIndex = 0;
@@ -256,8 +267,11 @@ export async function runOnnxInferenceWithProbabilities(
             throw new Error('Invalid output from model');
         }
         
-        // Return all probabilities
-        return Array.from(outputTensor.data as Float32Array);
+        // Convert output to array and apply sigmoid to get probabilities
+        const rawOutput = Array.from(outputTensor.data as Float32Array);
+        const probabilities = rawOutput.map(sigmoid); // Apply sigmoid
+        
+        return probabilities;
         
     } catch (error) {
         console.error('ONNX inference with probabilities failed:', error);
