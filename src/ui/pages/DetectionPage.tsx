@@ -41,8 +41,8 @@ const detectionErrors = [  {
     keys: ['chin_high', 'chin_low'],
     videoId: 'chin_position',
     correctiveAction: {
-      chin_high: 'Lower your chin to align with the occlusal plane. Your chin should be parallel to the floor.',
-      chin_low: 'Raise your chin slightly to align with the occlusal plane. Position should be natural and comfortable.'
+      chin_high: 'Lower the patient\'s chin to align with the occlusal plane. The chin should be parallel to the floor.',
+      chin_low: 'Raise the patient\'s chin slightly to align with the occlusal plane. Position should be natural and comfortable.'
     },
     getMessage: (predictions: ErrorPredictions) => {
       if (!predictions) return '';
@@ -60,8 +60,8 @@ const detectionErrors = [  {
     keys: ['pos_forward', 'pos_backward'],
     videoId: 'patient_position',
     correctiveAction: {
-      pos_forward: 'Step back slightly so your spine aligns with the designated mark on the floor. Maintain proper posture.',
-      pos_backward: 'Step forward slightly to reach the optimal position. Follow the positioning guides.'
+      pos_forward: 'Ask the patient to step back slightly so the spine aligns with the designated mark on the floor. Maintain proper posture.',
+      pos_backward: 'Ask the patient to step forward slightly to reach the optimal position. Follow the positioning guides.'
     },
     getMessage: (predictions: ErrorPredictions) => {
       if (!predictions) return '';
@@ -79,7 +79,7 @@ const detectionErrors = [  {
     keys: ['head_tilt'],
     videoId: 'head_tilt',
     correctiveAction: {
-      head_tilt: 'Keep your head level with the horizon. Align your eyes with the horizontal guide lines provided by the machine.'
+      head_tilt: 'Ensure the patient keeps their head level with the horizon. Align the patient\'s eyes with the horizontal guide lines provided by the machine.'
     },
     getMessage: (predictions: ErrorPredictions) => {
       if (!predictions || !predictions.head_tilt) return '';
@@ -95,7 +95,7 @@ const detectionErrors = [  {
     keys: ['head_rotate'],
     videoId: 'head_rotation',
     correctiveAction: {
-      head_rotate: 'Face directly forward, keeping your eyes level with the horizon. Use the laser guides to properly align your head.'
+      head_rotate: 'Position the patient to face directly forward, keeping their eyes level with the horizon. Use the laser guides to properly align the patient\'s head.'
     },
     getMessage: (predictions: ErrorPredictions) => {
       if (!predictions || !predictions.head_rotate) return '';
@@ -111,7 +111,7 @@ const detectionErrors = [  {
     keys: ['tongue_fail'],
     videoId: 'tongue_position',
     correctiveAction: {
-      tongue_fail: 'Press your tongue firmly against the roof of your mouth (palate). This eliminates air spaces and reduces shadows in the image.'
+      tongue_fail: 'Instruct the patient to press their tongue firmly against the roof of their mouth (palate). This eliminates air spaces and reduces shadows in the image.'
     },
     getMessage: (predictions: ErrorPredictions) => {
       if (!predictions || !predictions.tongue_fail) return '';
@@ -127,7 +127,7 @@ const detectionErrors = [  {
     keys: ['slumped_pos'],
     videoId: 'slumped_position',
     correctiveAction: {
-      slumped_pos: 'Stand upright with shoulders back and spine straight. Imagine a string pulling you up from the top of your head.'
+      slumped_pos: 'Ask the patient to stand upright with shoulders back and spine straight. Suggest imagining a string pulling up from the top of their head.'
     },
     getMessage: (predictions: ErrorPredictions) => {
       if (!predictions || !predictions.slumped_pos) return '';
@@ -143,7 +143,7 @@ const detectionErrors = [  {
     keys: ['movement'],
     videoId: 'patient_movement',
     correctiveAction: {
-      movement: 'Remain completely still during the entire scan. Hold your breath when instructed but avoid swallowing or moving any part of your body.'
+      movement: 'Instruct the patient to remain completely still during the entire scan. Ask them to hold their breath when instructed but avoid swallowing or moving any part of their body.'
     },
     getMessage: (predictions: ErrorPredictions) => {
       if (!predictions || !predictions.movement) return '';
@@ -159,7 +159,7 @@ const detectionErrors = [  {
     keys: ['no_bite_block'],
     videoId: 'bite_block',
     correctiveAction: {
-      no_bite_block: 'Place your teeth in the designated grooves of the bite block. This ensures proper alignment of your dental arches in the final image.'
+      no_bite_block: 'Guide the patient to place their teeth in the designated grooves of the bite block. This ensures proper alignment of their dental arches in the final image.'
     },
     getMessage: (predictions: ErrorPredictions) => {
       if (!predictions || !predictions.no_bite_block) return '';
@@ -177,8 +177,6 @@ export default function DetectionPage() {
   const [error, setError] = useState<string | null>(null);
   const [currentVideo, setCurrentVideo] = useState<string | null>(null);
   const [imagePath, setImagePath] = useState<string | null>(null);
-  const [imageData, setImageData] = useState<string | null>(null);
-  const [fileName, setFileName] = useState<string | null>(null);
   const [notes, setNotes] = useState<string>('');
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [saveSuccess, setSaveSuccess] = useState<boolean | null>(null);  const handleInferenceResult = async (file: { name: string; data: string }) => {
@@ -186,8 +184,6 @@ export default function DetectionPage() {
       setIsLoading(true);
       setError(null);
       setSaveSuccess(null);
-      setImageData(file.data);
-      setFileName(file.name);
       
       console.log('Sending file for inference:', file.name);
       
@@ -288,7 +284,7 @@ export default function DetectionPage() {
     <div className="flex flex-col flex-1 bg-gray-50">
       <Header
         title="Positioning Error Detection"
-        subtitle="Identify and understand common positioning issues in your dental panoramic radiographs."
+        subtitle="Identify and understand common patient positioning issues in dental panoramic radiographs."
       />
 
       {/* Main Content */}      <div className="flex flex-col gap-4 p-8 flex-1">
@@ -411,7 +407,7 @@ export default function DetectionPage() {
           }
           {predictions && (
             <div className="mt-2 p-3 bg-slate-100 rounded text-sm text-slate-600">
-              <p>Results based on analysis of the uploaded image. Consult with a dental professional for confirmation.</p>
+              <p>Results based on analysis of the uploaded image. Use this information to guide patient positioning for optimal imaging results.</p>
             </div>
           )}
         </section>
@@ -422,7 +418,7 @@ export default function DetectionPage() {
         <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-3xl w-full">
             <div className="flex justify-between items-center px-6 py-3 border-b">
-              <h3 className="font-semibold text-lg">How to Fix: {detectionErrors.find(e => e.videoId === currentVideo)?.title}</h3>
+              <h3 className="font-semibold text-lg">How to Guide: {detectionErrors.find(e => e.videoId === currentVideo)?.title}</h3>
               <button onClick={closeVideoModal} className="text-gray-500 hover:text-gray-800">
                 <FaTimes size={20} />
               </button>

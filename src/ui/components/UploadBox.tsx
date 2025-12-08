@@ -136,7 +136,7 @@ export default function UploadBox({ usage = 'feedback', onFileSelect, selectedFi
               Upload or Drag and Drop your Panoramic Radiographs
             </p>
             <p className="text-xs text-slate-500 mt-2">
-              Max File Size: 20MB | Supported: .jpeg, .pdf
+              Max File Size: 20MB | Supported: .jpeg, .pdf, .dcm
             </p>
           </>
         ) : (

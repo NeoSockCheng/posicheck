@@ -673,7 +673,7 @@ export default function FeedbackPage() {
                     </div>
                     
                     {/* Feedback details */}
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-4 text-slate-800">
                       <div className="bg-gray-50 p-3 rounded border border-gray-200">
                         <h4 className="font-medium text-violet-800 mb-2">Date</h4>
                         <p>{formatDate(selectedFeedback.timestamp)}</p>
