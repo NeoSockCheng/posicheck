@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import UploadBox from '../components/UploadBox';
+import type { UploadBoxHandle } from '../components/UploadBox';
 import ErrorCard from '../components/ErrorCard';
 import Header from '../components/Header';
 import {
@@ -13,7 +14,8 @@ import { BsPersonStanding } from "react-icons/bs";
 type InferenceResponse = {
   success: boolean;
   predictions?: Record<string, number>;
-  imagePath?: string;  // Updated to return image path instead of historyId
+  imagePath?: string;  // Path to saved image
+  imageBase64?: string; // Converted image for DICOM display
   error?: string;
 };
 
@@ -33,6 +35,9 @@ type ErrorPredictions = {
 
 // Error threshold for highlighting
 const ERROR_THRESHOLD = 0.5;
+
+// Feature flag to enable/disable video tutorials
+const ENABLE_VIDEO_TUTORIALS = false;
 
 const detectionErrors = [  {
     icon: <GiBeard  />,
@@ -203,9 +208,14 @@ export default function DetectionPage() {
   const [error, setError] = useState<string | null>(null);
   const [currentVideo, setCurrentVideo] = useState<string | null>(null);
   const [imagePath, setImagePath] = useState<string | null>(null);
+  const [imageData, setImageData] = useState<string | null>(null);
   const [notes, setNotes] = useState<string>('');
   const [isSaving, setIsSaving] = useState<boolean>(false);
-  const [saveSuccess, setSaveSuccess] = useState<boolean | null>(null);  const handleInferenceResult = async (file: { name: string; data: string }) => {
+  const [saveSuccess, setSaveSuccess] = useState<boolean | null>(null);
+  const [showImageModal, setShowImageModal] = useState<boolean>(false);
+  const uploadBoxRef = useRef<UploadBoxHandle>(null);
+
+  const handleInferenceResult = async (file: { name: string; data: string }) => {
     try {
       setIsLoading(true);
       setError(null);
@@ -236,6 +246,8 @@ export default function DetectionPage() {
         console.log('Predictions received:', result.predictions);
         setPredictions(result.predictions);
         setImagePath(result.imagePath || null);
+        // Use converted base64 for DICOM, otherwise use original file data
+        setImageData(result.imageBase64 || file.data);
       } else {
         console.error('Inference failed:', result.error);
         setError(result.error || 'Failed to process image');
@@ -318,7 +330,7 @@ export default function DetectionPage() {
         <div className="flex flex-col lg:flex-row gap-6 w-full">
           {/* Upload box - Full width when no results, half width when results are showing */}
           <div className={`flex flex-col items-center lg:items-start w-full ${predictions && imagePath ? 'lg:w-1/2' : 'w-full'}`}>
-            <UploadBox usage="inference" onFileSelect={handleInferenceResult} />
+            <UploadBox ref={uploadBoxRef} usage="inference" onFileSelect={handleInferenceResult} />
             {isLoading && (
               <div className="mt-3 text-center py-4 bg-violet-100 rounded animate-pulse w-full">
                 <div className="flex items-center justify-center space-x-2">
@@ -335,6 +347,68 @@ export default function DetectionPage() {
               <div className="mt-3 text-center py-4 bg-red-100 rounded w-full">
                 <p className="text-red-700 font-medium">{error}</p>
                 <p className="text-red-600 text-sm mt-1">Please try again or use a different image</p>
+              </div>
+            )}
+            
+            {/* Image action buttons - expand, re-upload, remove */}
+            {imagePath && predictions && (
+              <div className="mt-3 flex gap-2 justify-center">
+                {/* Expand/View Full Size */}
+                <button
+                  onClick={() => setShowImageModal(true)}
+                  className="p-2 bg-gray-100 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-200 transition-colors"
+                  title="View Full Size"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
+                  </svg>
+                </button>
+                
+                {/* Re-upload New Image */}
+                <button
+                  onClick={() => {
+                    // Reset state and trigger file input
+                    setPredictions(null);
+                    setImagePath(null);
+                    setImageData(null);
+                    setNotes('');
+                    setSaveSuccess(null);
+                    setError(null);
+                    uploadBoxRef.current?.clearPreview();
+                    // Small delay to ensure state is cleared before triggering upload
+                    setTimeout(() => uploadBoxRef.current?.triggerUpload(), 50);
+                  }}
+                  className="p-2 bg-gray-100 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-200 transition-colors"
+                  title="Upload New Image"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                  </svg>
+                </button>
+                
+                {/* Remove/Clear Image */}
+                <button
+                  onClick={() => {
+                    setPredictions(null);
+                    setImagePath(null);
+                    setImageData(null);
+                    setNotes('');
+                    setSaveSuccess(null);
+                    setError(null);
+                    uploadBoxRef.current?.clearPreview();
+                  }}
+                  className="p-2 bg-red-50 border border-red-200 rounded-md text-red-600 hover:bg-red-100 transition-colors"
+                  title="Remove Image"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    <line x1="10" y1="11" x2="10" y2="17"/>
+                    <line x1="14" y1="11" x2="14" y2="17"/>
+                  </svg>
+                </button>
               </div>
             )}
           </div>
@@ -412,7 +486,7 @@ export default function DetectionPage() {
                     title={error.title}
                     description={predictions ? error.getMessage(predictions) : error.description}
                     isDetected={isDetected}
-                    videoId={isDetected ? error.videoId : undefined}
+                    videoId={ENABLE_VIDEO_TUTORIALS && isDetected ? error.videoId : undefined}
                     correctiveAction={isDetected && detectedKey && error.correctiveAction ? error.correctiveAction[detectedKey as keyof typeof error.correctiveAction] : undefined}
                     onPlayVideo={handlePlayVideo}
                   />
@@ -420,9 +494,21 @@ export default function DetectionPage() {
               };
             })
             .sort((a, b) => {
-              // Sort detected errors to the top
+              // Sort detected errors to the top, then by confidence (highest first)
               if (a.isDetected && !b.isDetected) return -1;
               if (!a.isDetected && b.isDetected) return 1;
+              
+              // If both are detected, sort by confidence (highest first)
+              if (a.isDetected && b.isDetected && predictions) {
+                // Get the max confidence for each error from their keys
+                const getMaxConfidence = (keys: string[]) => {
+                  return Math.max(...keys.map(key => predictions[key as keyof typeof predictions] || 0));
+                };
+                const aConfidence = getMaxConfidence(a.error.keys);
+                const bConfidence = getMaxConfidence(b.error.keys);
+                return bConfidence - aConfidence; // Descending order
+              }
+              
               return 0;
             })
             .map(item => (
@@ -468,6 +554,33 @@ export default function DetectionPage() {
               </div>
             </div>
           </div>
+        </div>
+      )}
+      
+      {/* Full-Screen Image Modal */}
+      {showImageModal && imageData && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-95 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowImageModal(false)}
+        >
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowImageModal(false);
+            }}
+            className="absolute top-4 right-4 z-10 cursor-pointer p-2"
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M18 6L6 18" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+              <path d="M6 6L18 18" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+          </button>
+          <img 
+            src={imageData}
+            alt="Radiograph - Full Size"
+            className="max-w-full max-h-screen object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
         </div>
       )}
     </div>
