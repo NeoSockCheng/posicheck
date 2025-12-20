@@ -20,7 +20,12 @@ type FeedbackEntry = {
 
 type ActiveTab = 'submit' | 'view';
 
-export default function FeedbackPage() {
+type FeedbackPageProps = {
+  initialData?: { imageData: string; imagePath: string; detectedErrors: string[] } | null;
+  onClearInitialData?: () => void;
+};
+
+export default function FeedbackPage({ initialData, onClearInitialData }: FeedbackPageProps) {
   // Tab state
   const [activeTab, setActiveTab] = useState<ActiveTab>('submit');
   
@@ -84,6 +89,58 @@ export default function FeedbackPage() {
 
     loadData();
   }, []);
+  
+  // Effect to handle initial data passed from DetectionPage
+  useEffect(() => {
+    if (initialData) {
+      // Set the uploaded file
+      setUploadedFile({
+        name: 'Detected Image',
+        data: initialData.imageData
+      });
+      
+      // Map detected errors to form state
+      initialData.detectedErrors.forEach(errorKey => {
+        switch(errorKey) {
+          case 'chin_high':
+            setChinError('Chin Too High');
+            break;
+          case 'chin_low':
+            setChinError('Chin Too Low');
+            break;
+          case 'pos_forward':
+            setPositionError('Too Far Forward');
+            break;
+          case 'pos_backward':
+            setPositionError('Too Far Back');
+            break;
+          case 'head_tilt':
+            setHeadTilt('Tilted');
+            break;
+          case 'head_rotate':
+            setHeadRotation('Rotated');
+            break;
+          case 'tongue_fail':
+            setTongueError('Tongue Not Positioned');
+            break;
+          case 'slumped_pos':
+            setSlumpedPosition('Slumped');
+            break;
+          case 'movement':
+            setMovementError('Movement Detected');
+            break;
+          case 'no_bite_block':
+            setBiteblockError('Biteblock Missing');
+            break;
+        }
+      });
+      
+      // Clear the initial data after using it
+      if (onClearInitialData) {
+        onClearInitialData();
+      }
+    }
+  }, [initialData, onClearInitialData]);
     // Effect for loading feedback when the view tab is activated
   useEffect(() => {
     if (activeTab === 'view') {
@@ -525,7 +582,7 @@ export default function FeedbackPage() {
                         
                         <ErrorCategory
                           title="Tongue Position"
-                          options={['Tongue Properly Positioned', 'Tongue Visible', 'Tongue Against Teeth']}
+                          options={['Tongue Properly Positioned', 'Tongue Not Positioned']}
                           value={tongueError}
                           onChange={setTongueError}
                         />

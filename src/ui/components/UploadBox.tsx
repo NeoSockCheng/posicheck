@@ -1,4 +1,4 @@
-import React, { useRef, useState, forwardRef, useImperativeHandle } from 'react';
+import React, { useRef, useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 
 type UploadBoxProps = {
   usage?: 'inference' | 'feedback';
@@ -9,12 +9,21 @@ type UploadBoxProps = {
 export type UploadBoxHandle = {
   triggerUpload: () => void;
   clearPreview: () => void;
+  updatePreview: (imageData: string, name: string) => void;
 };
 
 const UploadBox = forwardRef<UploadBoxHandle, UploadBoxProps>(({ usage = 'feedback', onFileSelect, selectedFile }, ref) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(selectedFile?.data || null);
   const [fileName, setFileName] = useState<string | null>(selectedFile?.name || null);
+
+  // Sync preview when selectedFile prop changes (e.g., when navigating from Detection to Feedback)
+  useEffect(() => {
+    if (selectedFile) {
+      setPreview(selectedFile.data);
+      setFileName(selectedFile.name);
+    }
+  }, [selectedFile]);
 
   // Expose methods to parent component
   useImperativeHandle(ref, () => ({
@@ -28,6 +37,12 @@ const UploadBox = forwardRef<UploadBoxHandle, UploadBoxProps>(({ usage = 'feedba
       if (inputRef.current) {
         inputRef.current.value = '';
       }
+    },
+    updatePreview: (imageData: string, name: string) => {
+      console.log('UploadBox.updatePreview called with:', { name, dataLength: imageData?.length });
+      setPreview(imageData);
+      setFileName(name);
+      console.log('UploadBox preview state updated');
     }
   }));
 
@@ -42,7 +57,15 @@ const UploadBox = forwardRef<UploadBoxHandle, UploadBoxProps>(({ usage = 'feedba
           name: file.name,
           data: reader.result as string,
         };
-        setPreview(file.name.toLowerCase().endsWith('.dcm') ? null : reader.result as string);
+        
+        // For DICOM files in inference mode, don't set the preview here
+        // It will be updated by updatePreview() after conversion
+        const isDicom = file.name.toLowerCase().endsWith('.dcm');
+        const isInferenceMode = usage === 'inference';
+        
+        if (!isDicom || !isInferenceMode) {
+          setPreview(isDicom ? null : reader.result as string);
+        }
 
         if (onFileSelect) {
           onFileSelect(fileData);

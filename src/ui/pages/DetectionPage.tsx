@@ -202,7 +202,11 @@ const detectionErrors = [  {
   },
 ];
 
-export default function DetectionPage() {
+type DetectionPageProps = {
+  onSendToFeedback?: (data: { imageData: string; imagePath: string; detectedErrors: string[] }) => void;
+};
+
+export default function DetectionPage({ onSendToFeedback }: DetectionPageProps) {
   const [predictions, setPredictions] = useState<ErrorPredictions | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -246,8 +250,14 @@ export default function DetectionPage() {
         console.log('Predictions received:', result.predictions);
         setPredictions(result.predictions);
         setImagePath(result.imagePath || null);
-        // Use converted base64 for DICOM, otherwise use original file data
-        setImageData(result.imageBase64 || file.data);
+        // Use converted base64 for DICOM display
+        const displayImage = result.imageBase64 || file.data;
+        setImageData(displayImage);
+        
+        // Update the upload box preview with converted image for DICOM files
+        if (result.imageBase64 && uploadBoxRef.current) {
+          uploadBoxRef.current.updatePreview(result.imageBase64, file.name);
+        }
       } else {
         console.error('Inference failed:', result.error);
         setError(result.error || 'Failed to process image');
@@ -316,6 +326,25 @@ export default function DetectionPage() {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleSendToFeedback = () => {
+    if (!predictions || !imageData || !imagePath || !onSendToFeedback) return;
+    
+    // Get all detected error keys
+    const detectedErrors: string[] = [];
+    detectionErrors.forEach(errorConfig => {
+      const errorKey = getDetectedErrorKey(errorConfig.keys, predictions);
+      if (errorKey) {
+        detectedErrors.push(errorKey);
+      }
+    });
+    
+    onSendToFeedback({
+      imageData,
+      imagePath,
+      detectedErrors
+    });
   };
 
   return (
@@ -408,6 +437,20 @@ export default function DetectionPage() {
                     <line x1="10" y1="11" x2="10" y2="17"/>
                     <line x1="14" y1="11" x2="14" y2="17"/>
                   </svg>
+                </button>
+                
+                {/* Send to Feedback */}
+                <button
+                  onClick={handleSendToFeedback}
+                  className="px-4 py-2 bg-blue-600 border border-blue-700 rounded-md text-white hover:bg-blue-700 transition-colors font-medium text-sm"
+                  title="Send to Feedback"
+                >
+                  <div className="flex items-center gap-2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+                    </svg>
+                    Send to Feedback
+                  </div>
                 </button>
               </div>
             )}
