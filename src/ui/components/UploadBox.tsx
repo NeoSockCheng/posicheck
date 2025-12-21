@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect, forwardRef, useImperativeHandle } from 'react';
+import { flushSync } from 'react-dom';
 
 type UploadBoxProps = {
   usage?: 'inference' | 'feedback';
@@ -16,14 +17,16 @@ const UploadBox = forwardRef<UploadBoxHandle, UploadBoxProps>(({ usage = 'feedba
   const inputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(selectedFile?.data || null);
   const [fileName, setFileName] = useState<string | null>(selectedFile?.name || null);
+  const [hasManualOverride, setHasManualOverride] = useState(false);
 
   // Sync preview when selectedFile prop changes (e.g., when navigating from Detection to Feedback)
+  // Only sync if there's no manual override from imperative methods
   useEffect(() => {
-    if (selectedFile) {
+    if (selectedFile && !hasManualOverride) {
       setPreview(selectedFile.data);
       setFileName(selectedFile.name);
     }
-  }, [selectedFile]);
+  }, [selectedFile, hasManualOverride]);
 
   // Expose methods to parent component
   useImperativeHandle(ref, () => ({
@@ -31,8 +34,11 @@ const UploadBox = forwardRef<UploadBoxHandle, UploadBoxProps>(({ usage = 'feedba
       inputRef.current?.click();
     },
     clearPreview: () => {
-      setPreview(null);
-      setFileName(null);
+      flushSync(() => {
+        setHasManualOverride(true);
+        setPreview(null);
+        setFileName(null);
+      });
       // Reset the file input value so the same file can be selected again
       if (inputRef.current) {
         inputRef.current.value = '';
@@ -40,8 +46,11 @@ const UploadBox = forwardRef<UploadBoxHandle, UploadBoxProps>(({ usage = 'feedba
     },
     updatePreview: (imageData: string, name: string) => {
       console.log('UploadBox.updatePreview called with:', { name, dataLength: imageData?.length });
-      setPreview(imageData);
-      setFileName(name);
+      flushSync(() => {
+        setHasManualOverride(true);
+        setPreview(imageData);
+        setFileName(name);
+      });
       console.log('UploadBox preview state updated');
     }
   }));
@@ -49,6 +58,7 @@ const UploadBox = forwardRef<UploadBoxHandle, UploadBoxProps>(({ usage = 'feedba
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setHasManualOverride(false); // Clear override when user selects a new file
     setFileName(file.name);
     if (file.type.startsWith('image/') || file.name.toLowerCase().endsWith('.dcm')) {
       const reader = new FileReader();
@@ -101,6 +111,7 @@ const UploadBox = forwardRef<UploadBoxHandle, UploadBoxProps>(({ usage = 'feedba
     e.preventDefault();
     const file = e.dataTransfer.files[0];
     if (!file) return;
+    setHasManualOverride(false); // Clear override when user drops a new file
     setFileName(file.name);
     if (file.type.startsWith('image/') || file.name.toLowerCase().endsWith('.dcm')) {
       const reader = new FileReader();
@@ -181,6 +192,30 @@ const UploadBox = forwardRef<UploadBoxHandle, UploadBoxProps>(({ usage = 'feedba
             <p className="text-xs text-slate-500 mt-2">
               Max File Size: 20MB | Supported: .jpeg, .png, .dcm
             </p>
+          </>
+        ) : fileName?.toLowerCase().endsWith('.dcm') ? (
+          <>
+            <svg
+              width="40"
+              height="40"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              className="text-violet-600 mb-4"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
+            </svg>
+            <p className="text-violet-700 text-center text-sm sm:text-base">
+              DICOM File Selected
+            </p>
+            <div className="text-slate-700 text-sm mt-2 text-center max-w-full truncate">
+              {fileName}
+            </div>
           </>
         ) : preview ? (
           <>            <div className="h-[180px] w-full flex items-center justify-center">

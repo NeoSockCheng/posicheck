@@ -4,7 +4,8 @@ import sharp from 'sharp';
 import { createRequire } from 'module';
 import { app } from 'electron';
 
-// Use require for CommonJS modules
+// Use require for CommonJS modules in ES module context
+// This works in the Electron main process but not in Jest (which uses the mock instead)
 const require = createRequire(import.meta.url);
 const dicomParser = require('dicom-parser');
 

@@ -1,3 +1,5 @@
+import React from 'react';
+
 type ErrorCategoryProps = {
   title: string;
   options: string[];
