@@ -10,17 +10,21 @@ import './index.css';
 
 export default function App() {
   const [selectedPage, setSelectedPage] = useState('home');
+  const [feedbackData, setFeedbackData] = useState<{ imageData: string; imagePath: string; detectedErrors: string[] } | null>(null);
 
   const renderPage = () => {
     switch (selectedPage) {
       case 'home':
         return <HomePage onTryDetection={() => setSelectedPage('detection')} />;
       case 'detection':
-        return <DetectionPage />;
+        return <DetectionPage onSendToFeedback={(data) => {
+          setFeedbackData(data);
+          setSelectedPage('feedback');
+        }} />;
       case 'history':
         return <HistoryPage />;
       case 'feedback':
-        return <FeedbackPage />;
+        return <FeedbackPage initialData={feedbackData} onClearInitialData={() => setFeedbackData(null)} />;
       case 'profile':
         return <ProfilePage />;
       default:

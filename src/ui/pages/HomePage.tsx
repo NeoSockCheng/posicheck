@@ -18,7 +18,7 @@ export default function HomePage({ onTryDetection }: HomePageProps) {
           <h1 className="text-3xl sm:text-5xl font-bold text-violet-600 mb-4">
             <span className="text-slate-600">Posi</span>Check.
           </h1>
-          <p className="font-sans text-gray-600 max-w-xl mx-auto text-sm sm:text-base">
+          <p className="font-sans text-gray-600 max-w-xl mx-auto text-sm sm:text-base mb-8">
             AI-powered tool for detecting positioning errors in dental panoramic radiographs
           </p>
           <Button onClick={onTryDetection}>Start Detection</Button>

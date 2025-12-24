@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import UploadBox from '../components/UploadBox';
+import type { UploadBoxHandle } from '../components/UploadBox';
 import ErrorCard from '../components/ErrorCard';
 import Header from '../components/Header';
 import {
@@ -13,7 +14,8 @@ import { BsPersonStanding } from "react-icons/bs";
 type InferenceResponse = {
   success: boolean;
   predictions?: Record<string, number>;
-  imagePath?: string;  // Updated to return image path instead of historyId
+  imagePath?: string;  // Path to saved image
+  imageBase64?: string; // Converted image for DICOM display
   error?: string;
 };
 
@@ -34,6 +36,9 @@ type ErrorPredictions = {
 // Error threshold for highlighting
 const ERROR_THRESHOLD = 0.5;
 
+// Feature flag to enable/disable video tutorials
+const ENABLE_VIDEO_TUTORIALS = false;
+
 const detectionErrors = [  {
     icon: <GiBeard  />,
     title: 'Chin Position Error',
@@ -41,15 +46,28 @@ const detectionErrors = [  {
     keys: ['chin_high', 'chin_low'],
     videoId: 'chin_position',
     correctiveAction: {
-      chin_high: 'Lower your chin to align with the occlusal plane. Your chin should be parallel to the floor.',
-      chin_low: 'Raise your chin slightly to align with the occlusal plane. Position should be natural and comfortable.'
+      chin_high: 'Lower the patient\'s chin to align with the occlusal plane. The chin should be parallel to the floor.',
+      chin_low: 'Raise the patient\'s chin slightly to align with the occlusal plane. Position should be natural and comfortable.'
     },
     getMessage: (predictions: ErrorPredictions) => {
       if (!predictions) return '';
-      if (predictions.chin_high && predictions.chin_high > ERROR_THRESHOLD) {
-        return `Chin too high detected - Confidence: ${(predictions.chin_high * 100).toFixed(1)}%`;
-      } else if (predictions.chin_low && predictions.chin_low > ERROR_THRESHOLD) {
-        return `Chin too low detected - Confidence: ${(predictions.chin_low * 100).toFixed(1)}%`;
+      const highVal = predictions.chin_high || 0;
+      const lowVal = predictions.chin_low || 0;
+      
+      // Both exceed threshold - show the higher one
+      if (highVal > ERROR_THRESHOLD && lowVal > ERROR_THRESHOLD) {
+        if (highVal >= lowVal) {
+          return `Chin too high detected - Confidence: ${(highVal * 100).toFixed(1)}%`;
+        } else {
+          return `Chin too low detected - Confidence: ${(lowVal * 100).toFixed(1)}%`;
+        }
+      }
+      // Only one exceeds threshold
+      if (highVal > ERROR_THRESHOLD) {
+        return `Chin too high detected - Confidence: ${(highVal * 100).toFixed(1)}%`;
+      }
+      if (lowVal > ERROR_THRESHOLD) {
+        return `Chin too low detected - Confidence: ${(lowVal * 100).toFixed(1)}%`;
       }
       return 'No chin position errors detected';
     }
@@ -60,15 +78,28 @@ const detectionErrors = [  {
     keys: ['pos_forward', 'pos_backward'],
     videoId: 'patient_position',
     correctiveAction: {
-      pos_forward: 'Step back slightly so your spine aligns with the designated mark on the floor. Maintain proper posture.',
-      pos_backward: 'Step forward slightly to reach the optimal position. Follow the positioning guides.'
+      pos_forward: 'Ask the patient to step back slightly so the spine aligns with the designated mark on the floor. Maintain proper posture.',
+      pos_backward: 'Ask the patient to step forward slightly to reach the optimal position. Follow the positioning guides.'
     },
     getMessage: (predictions: ErrorPredictions) => {
       if (!predictions) return '';
-      if (predictions.pos_forward && predictions.pos_forward > ERROR_THRESHOLD) {
-        return `Position too far forward - Confidence: ${(predictions.pos_forward * 100).toFixed(1)}%`;
-      } else if (predictions.pos_backward && predictions.pos_backward > ERROR_THRESHOLD) {
-        return `Position too far backward - Confidence: ${(predictions.pos_backward * 100).toFixed(1)}%`;
+      const forwardVal = predictions.pos_forward || 0;
+      const backwardVal = predictions.pos_backward || 0;
+      
+      // Both exceed threshold - show the higher one
+      if (forwardVal > ERROR_THRESHOLD && backwardVal > ERROR_THRESHOLD) {
+        if (forwardVal >= backwardVal) {
+          return `Position too far forward - Confidence: ${(forwardVal * 100).toFixed(1)}%`;
+        } else {
+          return `Position too far backward - Confidence: ${(backwardVal * 100).toFixed(1)}%`;
+        }
+      }
+      // Only one exceeds threshold
+      if (forwardVal > ERROR_THRESHOLD) {
+        return `Position too far forward - Confidence: ${(forwardVal * 100).toFixed(1)}%`;
+      }
+      if (backwardVal > ERROR_THRESHOLD) {
+        return `Position too far backward - Confidence: ${(backwardVal * 100).toFixed(1)}%`;
       }
       return 'No positioning errors detected';
     }
@@ -79,7 +110,7 @@ const detectionErrors = [  {
     keys: ['head_tilt'],
     videoId: 'head_tilt',
     correctiveAction: {
-      head_tilt: 'Keep your head level with the horizon. Align your eyes with the horizontal guide lines provided by the machine.'
+      head_tilt: 'Ensure the patient keeps their head level with the horizon. Align the patient\'s eyes with the horizontal guide lines provided by the machine.'
     },
     getMessage: (predictions: ErrorPredictions) => {
       if (!predictions || !predictions.head_tilt) return '';
@@ -95,7 +126,7 @@ const detectionErrors = [  {
     keys: ['head_rotate'],
     videoId: 'head_rotation',
     correctiveAction: {
-      head_rotate: 'Face directly forward, keeping your eyes level with the horizon. Use the laser guides to properly align your head.'
+      head_rotate: 'Position the patient to face directly forward, keeping their eyes level with the horizon. Use the laser guides to properly align the patient\'s head.'
     },
     getMessage: (predictions: ErrorPredictions) => {
       if (!predictions || !predictions.head_rotate) return '';
@@ -111,7 +142,7 @@ const detectionErrors = [  {
     keys: ['tongue_fail'],
     videoId: 'tongue_position',
     correctiveAction: {
-      tongue_fail: 'Press your tongue firmly against the roof of your mouth (palate). This eliminates air spaces and reduces shadows in the image.'
+      tongue_fail: 'Instruct the patient to press their tongue firmly against the roof of their mouth (palate). This eliminates air spaces and reduces shadows in the image.'
     },
     getMessage: (predictions: ErrorPredictions) => {
       if (!predictions || !predictions.tongue_fail) return '';
@@ -127,7 +158,7 @@ const detectionErrors = [  {
     keys: ['slumped_pos'],
     videoId: 'slumped_position',
     correctiveAction: {
-      slumped_pos: 'Stand upright with shoulders back and spine straight. Imagine a string pulling you up from the top of your head.'
+      slumped_pos: 'Ask the patient to stand upright with shoulders back and spine straight. Suggest imagining a string pulling up from the top of their head.'
     },
     getMessage: (predictions: ErrorPredictions) => {
       if (!predictions || !predictions.slumped_pos) return '';
@@ -143,7 +174,7 @@ const detectionErrors = [  {
     keys: ['movement'],
     videoId: 'patient_movement',
     correctiveAction: {
-      movement: 'Remain completely still during the entire scan. Hold your breath when instructed but avoid swallowing or moving any part of your body.'
+      movement: 'Instruct the patient to remain completely still during the entire scan. Ask them to hold their breath when instructed but avoid swallowing or moving any part of their body.'
     },
     getMessage: (predictions: ErrorPredictions) => {
       if (!predictions || !predictions.movement) return '';
@@ -159,7 +190,7 @@ const detectionErrors = [  {
     keys: ['no_bite_block'],
     videoId: 'bite_block',
     correctiveAction: {
-      no_bite_block: 'Place your teeth in the designated grooves of the bite block. This ensures proper alignment of your dental arches in the final image.'
+      no_bite_block: 'Guide the patient to place their teeth in the designated grooves of the bite block. This ensures proper alignment of their dental arches in the final image.'
     },
     getMessage: (predictions: ErrorPredictions) => {
       if (!predictions || !predictions.no_bite_block) return '';
@@ -171,23 +202,28 @@ const detectionErrors = [  {
   },
 ];
 
-export default function DetectionPage() {
+type DetectionPageProps = {
+  onSendToFeedback?: (data: { imageData: string; imagePath: string; detectedErrors: string[] }) => void;
+};
+
+export default function DetectionPage({ onSendToFeedback }: DetectionPageProps) {
   const [predictions, setPredictions] = useState<ErrorPredictions | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [currentVideo, setCurrentVideo] = useState<string | null>(null);
   const [imagePath, setImagePath] = useState<string | null>(null);
   const [imageData, setImageData] = useState<string | null>(null);
-  const [fileName, setFileName] = useState<string | null>(null);
   const [notes, setNotes] = useState<string>('');
   const [isSaving, setIsSaving] = useState<boolean>(false);
-  const [saveSuccess, setSaveSuccess] = useState<boolean | null>(null);  const handleInferenceResult = async (file: { name: string; data: string }) => {
+  const [saveSuccess, setSaveSuccess] = useState<boolean | null>(null);
+  const [showImageModal, setShowImageModal] = useState<boolean>(false);
+  const uploadBoxRef = useRef<UploadBoxHandle>(null);
+
+  const handleInferenceResult = async (file: { name: string; data: string }) => {
     try {
       setIsLoading(true);
       setError(null);
       setSaveSuccess(null);
-      setImageData(file.data);
-      setFileName(file.name);
       
       console.log('Sending file for inference:', file.name);
       
@@ -214,6 +250,14 @@ export default function DetectionPage() {
         console.log('Predictions received:', result.predictions);
         setPredictions(result.predictions);
         setImagePath(result.imagePath || null);
+        // Use converted base64 for DICOM display
+        const displayImage = result.imageBase64 || file.data;
+        setImageData(displayImage);
+        
+        // Update the upload box preview with converted image for DICOM files
+        if (result.imageBase64 && uploadBoxRef.current) {
+          uploadBoxRef.current.updatePreview(result.imageBase64, file.name);
+        }
       } else {
         console.error('Inference failed:', result.error);
         setError(result.error || 'Failed to process image');
@@ -284,11 +328,30 @@ export default function DetectionPage() {
     }
   };
 
+  const handleSendToFeedback = () => {
+    if (!predictions || !imageData || !imagePath || !onSendToFeedback) return;
+    
+    // Get all detected error keys
+    const detectedErrors: string[] = [];
+    detectionErrors.forEach(errorConfig => {
+      const errorKey = getDetectedErrorKey(errorConfig.keys, predictions);
+      if (errorKey) {
+        detectedErrors.push(errorKey);
+      }
+    });
+    
+    onSendToFeedback({
+      imageData,
+      imagePath,
+      detectedErrors
+    });
+  };
+
   return (
     <div className="flex flex-col flex-1 bg-gray-50">
       <Header
         title="Positioning Error Detection"
-        subtitle="Identify and understand common positioning issues in your dental panoramic radiographs."
+        subtitle="Identify and understand common patient positioning issues in dental panoramic radiographs."
       />
 
       {/* Main Content */}      <div className="flex flex-col gap-4 p-8 flex-1">
@@ -296,7 +359,7 @@ export default function DetectionPage() {
         <div className="flex flex-col lg:flex-row gap-6 w-full">
           {/* Upload box - Full width when no results, half width when results are showing */}
           <div className={`flex flex-col items-center lg:items-start w-full ${predictions && imagePath ? 'lg:w-1/2' : 'w-full'}`}>
-            <UploadBox usage="inference" onFileSelect={handleInferenceResult} />
+            <UploadBox ref={uploadBoxRef} usage="inference" onFileSelect={handleInferenceResult} />
             {isLoading && (
               <div className="mt-3 text-center py-4 bg-violet-100 rounded animate-pulse w-full">
                 <div className="flex items-center justify-center space-x-2">
@@ -313,6 +376,82 @@ export default function DetectionPage() {
               <div className="mt-3 text-center py-4 bg-red-100 rounded w-full">
                 <p className="text-red-700 font-medium">{error}</p>
                 <p className="text-red-600 text-sm mt-1">Please try again or use a different image</p>
+              </div>
+            )}
+            
+            {/* Image action buttons - expand, re-upload, remove */}
+            {imagePath && predictions && (
+              <div className="mt-3 flex gap-2 justify-center">
+                {/* Expand/View Full Size */}
+                <button
+                  onClick={() => setShowImageModal(true)}
+                  className="p-2 bg-gray-100 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-200 transition-colors"
+                  title="View Full Size"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
+                  </svg>
+                </button>
+                
+                {/* Re-upload New Image */}
+                <button
+                  onClick={() => {
+                    // Reset state and trigger file input
+                    setPredictions(null);
+                    setImagePath(null);
+                    setImageData(null);
+                    setNotes('');
+                    setSaveSuccess(null);
+                    setError(null);
+                    uploadBoxRef.current?.clearPreview();
+                    // Small delay to ensure state is cleared before triggering upload
+                    setTimeout(() => uploadBoxRef.current?.triggerUpload(), 50);
+                  }}
+                  className="p-2 bg-gray-100 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-200 transition-colors"
+                  title="Upload New Image"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                  </svg>
+                </button>
+                
+                {/* Remove/Clear Image */}
+                <button
+                  onClick={() => {
+                    setPredictions(null);
+                    setImagePath(null);
+                    setImageData(null);
+                    setNotes('');
+                    setSaveSuccess(null);
+                    setError(null);
+                    uploadBoxRef.current?.clearPreview();
+                  }}
+                  className="p-2 bg-red-50 border border-red-200 rounded-md text-red-600 hover:bg-red-100 transition-colors"
+                  title="Remove Image"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    <line x1="10" y1="11" x2="10" y2="17"/>
+                    <line x1="14" y1="11" x2="14" y2="17"/>
+                  </svg>
+                </button>
+                
+                {/* Send to Feedback */}
+                <button
+                  onClick={handleSendToFeedback}
+                  className="px-4 py-2 bg-blue-600 border border-blue-700 rounded-md text-white hover:bg-blue-700 transition-colors font-medium text-sm"
+                  title="Send to Feedback"
+                >
+                  <div className="flex items-center gap-2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+                    </svg>
+                    Send to Feedback
+                  </div>
+                </button>
               </div>
             )}
           </div>
@@ -390,7 +529,7 @@ export default function DetectionPage() {
                     title={error.title}
                     description={predictions ? error.getMessage(predictions) : error.description}
                     isDetected={isDetected}
-                    videoId={isDetected ? error.videoId : undefined}
+                    videoId={ENABLE_VIDEO_TUTORIALS && isDetected ? error.videoId : undefined}
                     correctiveAction={isDetected && detectedKey && error.correctiveAction ? error.correctiveAction[detectedKey as keyof typeof error.correctiveAction] : undefined}
                     onPlayVideo={handlePlayVideo}
                   />
@@ -398,9 +537,21 @@ export default function DetectionPage() {
               };
             })
             .sort((a, b) => {
-              // Sort detected errors to the top
+              // Sort detected errors to the top, then by confidence (highest first)
               if (a.isDetected && !b.isDetected) return -1;
               if (!a.isDetected && b.isDetected) return 1;
+              
+              // If both are detected, sort by confidence (highest first)
+              if (a.isDetected && b.isDetected && predictions) {
+                // Get the max confidence for each error from their keys
+                const getMaxConfidence = (keys: string[]) => {
+                  return Math.max(...keys.map(key => predictions[key as keyof typeof predictions] || 0));
+                };
+                const aConfidence = getMaxConfidence(a.error.keys);
+                const bConfidence = getMaxConfidence(b.error.keys);
+                return bConfidence - aConfidence; // Descending order
+              }
+              
               return 0;
             })
             .map(item => (
@@ -411,7 +562,7 @@ export default function DetectionPage() {
           }
           {predictions && (
             <div className="mt-2 p-3 bg-slate-100 rounded text-sm text-slate-600">
-              <p>Results based on analysis of the uploaded image. Consult with a dental professional for confirmation.</p>
+              <p>Results based on analysis of the uploaded image. Use this information to guide patient positioning for optimal imaging results.</p>
             </div>
           )}
         </section>
@@ -422,7 +573,7 @@ export default function DetectionPage() {
         <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-3xl w-full">
             <div className="flex justify-between items-center px-6 py-3 border-b">
-              <h3 className="font-semibold text-lg">How to Fix: {detectionErrors.find(e => e.videoId === currentVideo)?.title}</h3>
+              <h3 className="font-semibold text-lg">How to Guide: {detectionErrors.find(e => e.videoId === currentVideo)?.title}</h3>
               <button onClick={closeVideoModal} className="text-gray-500 hover:text-gray-800">
                 <FaTimes size={20} />
               </button>
@@ -446,6 +597,33 @@ export default function DetectionPage() {
               </div>
             </div>
           </div>
+        </div>
+      )}
+      
+      {/* Full-Screen Image Modal */}
+      {showImageModal && imageData && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-95 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowImageModal(false)}
+        >
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowImageModal(false);
+            }}
+            className="absolute top-4 right-4 z-10 cursor-pointer p-2"
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M18 6L6 18" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+              <path d="M6 6L18 18" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+          </button>
+          <img 
+            src={imageData}
+            alt="Radiograph - Full Size"
+            className="max-w-full max-h-screen object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
         </div>
       )}
     </div>

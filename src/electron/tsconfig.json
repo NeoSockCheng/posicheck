@@ -9,12 +9,27 @@
         "outDir": "../../dist-electron",
         // ignore errors from dependencies
         "skipLibCheck": true,
-        "types": ["../types/globalType"],
+        "types": [
+            "../types/globalType"
+        ],
         "baseUrl": "./",
         "paths": {
-            "services/*": ["../services/*"]
+            "services/*": [
+                "../services/*"
+            ]
         },
         "moduleResolution": "NodeNext"
     },
-    "include": ["./**/*", "../services/**/*"]
+    "include": [
+        "./**/*",
+        "../services/**/*"
+    ],
+    "exclude": [
+        "./**/__tests__/**",
+        "./**/__mocks__/**",
+        "./**/*.test.ts",
+        "./**/*.test.tsx",
+        "../services/**/__tests__/**",
+        "../services/**/__mocks__/**"
+    ]
 }

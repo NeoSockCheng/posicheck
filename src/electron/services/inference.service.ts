@@ -1,7 +1,8 @@
-import * as tf from '@tensorflow/tfjs';
 import fs from 'fs';
 import path from 'path';
 import { app } from 'electron';
+import { runOnnxInferenceWithProbabilities } from './onnx-inference.service.js';
+import { isDicomData, convertDicomBase64ToImage } from './dicom.service.js';
 
 const errorCols = [
     'chin_high', 'chin_low', 'pos_forward', 'pos_backward',
@@ -9,32 +10,19 @@ const errorCols = [
     'movement', 'no_bite_block'
 ];
 
-/**
- * Generate mock predictions for testing
- */
-function generateMockPredictions(): Record<string, number> {
-    const predictions: Record<string, number> = {};
-    
-    // Generate random values between 0-1 for each error type
-    errorCols.forEach(errorType => {
-        // Generate some high values to simulate detections
-        const isDetected = Math.random() > 0.7;
-        predictions[errorType] = isDetected
-            ? Math.random() * 0.5 + 0.5  // 0.5 to 1.0 (high probability)
-            : Math.random() * 0.3;       // 0 to 0.3 (low probability)
-    });
-    
-    // Ensure at least one error is detected with high probability
-    const randomErrorIndex = Math.floor(Math.random() * errorCols.length);
-    predictions[errorCols[randomErrorIndex]] = Math.random() * 0.3 + 0.7;  // 0.7-1.0
-    
-    return predictions;
-}
+// Path to ONNX model
+const ONNX_MODEL_PATH = path.join(
+    app.getAppPath(), 
+    'src', 
+    'electron', 
+    'model', 
+    'model.onnx'
+);
 
 export async function runInference(name: string, data: string) {
     // Create a permanent storage location for the image
     const timestamp = Date.now();
-    const ext = path.extname(name) || '.jpg';
+    let ext = path.extname(name).toLowerCase() || '.jpg';
     const userDataPath = app.getPath('userData');
     const imagesPath = path.join(userDataPath, 'detection_images');
     
@@ -43,8 +31,6 @@ export async function runInference(name: string, data: string) {
         fs.mkdirSync(imagesPath, { recursive: true });
     }
     
-    const imageName = `detection_${timestamp}${ext}`;
-    const imagePath = path.join(imagesPath, imageName);
     const base64Data = data.split(',')[1]; // Remove data URL prefix
     
     if (!base64Data) {
@@ -52,21 +38,46 @@ export async function runInference(name: string, data: string) {
         return { success: false, error: 'Invalid image data format' };
     }
     
+    // Check if this is a DICOM file
+    const isDicom = ext === '.dcm' || ext === '.dicom' || isDicomData(data);
+    
+    // For DICOM files, we'll convert to PNG
+    const finalExt = isDicom ? '.png' : ext;
+    const imageName = `detection_${timestamp}${finalExt}`;
+    const imagePath = path.join(imagesPath, imageName);
+    
     try {
-        // Write the file to permanent storage
-        fs.writeFileSync(imagePath, Buffer.from(base64Data, 'base64'));
-          // For now, always use mock predictions since we're in Electron context
-        // and the web version of TensorFlow.js can't load files directly
-        console.log('Using mock inference for demonstration');
-        const predictions = generateMockPredictions();
+        let displayImageData: string | undefined;
         
-        // No longer automatically save to history - user will do this manually
-        // const historyId = await saveDetectionHistory(imagePath, predictions);
+        if (isDicom) {
+            // Convert DICOM to PNG
+            console.log('Detected DICOM file, converting to PNG...');
+            await convertDicomBase64ToImage(data, imagePath);
+            
+            // Read the converted PNG as base64 for display
+            const pngBuffer = fs.readFileSync(imagePath);
+            displayImageData = `data:image/png;base64,${pngBuffer.toString('base64')}`;
+        } else {
+            // Write the file to permanent storage directly
+            fs.writeFileSync(imagePath, Buffer.from(base64Data, 'base64'));
+        }
+          // Use ONNX model for inference
+        console.log('Running ONNX inference on:', imagePath);
+        const probabilities = await runOnnxInferenceWithProbabilities(imagePath, ONNX_MODEL_PATH);
+        
+        // Convert array to object format expected by the app
+        const predictions: Record<string, number> = {};
+        errorCols.forEach((errorType, index) => {
+            predictions[errorType] = probabilities[index];
+        });
+        
+        console.log('ONNX predictions:', predictions);
         
         return { 
             success: true, 
             predictions,
-            imagePath   // Return the image path instead of historyId
+            imagePath,   // Return the image path
+            imageBase64: displayImageData  // Return converted image for DICOM display
         };
     } catch (error) {
         console.error('Inference error:', error);
