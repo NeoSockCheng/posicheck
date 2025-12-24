@@ -14,6 +14,13 @@ dist-react
 dist-electron
 *.local
 
+# Test coverage
+coverage
+*.lcov
+
+# User data
+data
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -24,3 +31,17 @@ dist-electron
 *.njsproj
 *.sln
 *.sw?
+
+# Backup files
+*.new
+*.new.*
+*.old
+*.backup
+*.bak
+
+# Debug artifacts
+test-errors.txt
+*.txt.log
+
+# OS files
+Thumbs.db
