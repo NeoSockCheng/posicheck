@@ -19,8 +19,8 @@
     "dist:linux": "npm run transpile:electron && npm run build && electron-builder --linux --arm64",
     "dist:win": "npm run transpile:electron && npm run build && electron-builder --win --x64",
     "test": "jest",
-    "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
+    "test:watch": "jest --watch",
     "test:verbose": "jest --verbose",
     "rebuild": "electron-rebuild -f -w @tensorflow/tfjs-node better-sqlite3 onnxruntime-node"
   },

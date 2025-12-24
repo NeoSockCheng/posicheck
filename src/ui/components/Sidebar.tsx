@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { FaHome, FaSearch, FaHistory, FaComment, FaUser, FaSignOutAlt } from 'react-icons/fa';
 import { logo } from '../assets/assets.ts';
 import Modal from './Modal';

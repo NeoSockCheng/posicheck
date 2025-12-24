@@ -29,5 +29,6 @@ export default {
     },
     moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
     testPathIgnorePatterns: ['/node_modules/', '/dist/', '/out/'],
-    coveragePathIgnorePatterns: ['/node_modules/', '/dist/', '/out/']
+    coveragePathIgnorePatterns: ['/node_modules/', '/dist/', '/out/'],
+    coverageReporters: ['text', 'lcov', 'html']
 };
